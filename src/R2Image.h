@@ -110,7 +110,9 @@ class R2Image {
   void blendOtherImageTranslated(R2Image * otherImage);
   void blendOtherImageHomography(R2Image * otherImage);
   void ReplaceRed(R2Image * otherImage);
-  void ProjectImage(R2Image * otherImage, R2Image * projection);
+  void ProjectImage(R2Image * otherImage,
+		    R2Image * m1, R2Image * m2, R2Image * m3, R2Image * m4,
+		    R2Image * projection);
 
 
   // File reading/writing

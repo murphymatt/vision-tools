@@ -509,7 +509,7 @@ GetBestFeatures(void)
     isFar = true;
     cur = points.at(i).first;
     for (int j=0; j<feats.size(); j++) {
-      if (abs(cur->X() - feats.at(j)->X() < 10) &&
+      if (abs(cur->X() - feats.at(j)->X()) < 10 &&
 	  abs(cur->Y() - feats.at(j)->Y()) < 10) {
 	isFar = false;
 	break;
@@ -1223,6 +1223,7 @@ ImageSSD(R2Image * sub, int x0, int x1, int y0, int y1)
       
     }
   }
+  return sum;
 }
 
 
@@ -1238,17 +1239,21 @@ Convolve(R2Image * subImage, int x, int y, int r)
   for(int lx=x-r; lx<x+r; lx++) {
     for(int ly=y-r; ly<y+r; ly++) {
       diff = CompareBlock(subImage);
+      if (diff < minDiff) minDiff = diff;
     }
   }
+
+  return new R2Point(x,y);
 }
 
 
 double R2Image::
 CompareBlock(R2Image * subImage )
 {
-
+  double minDiff = std::numeric_limits<double>::infinity(), diff;
+  return minDiff;
 }
-  
+
 
 void R2Image::
 TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * marker4)
@@ -1262,10 +1267,10 @@ TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * 
 }
 
 
-// Preconditions: pBounds is a 4-array
-// std::vector<R2Point*> pBounds
 void R2Image::
-ProjectImage(R2Image * otherImage, R2Image * projection)
+ProjectImage(R2Image * otherImage,
+	     R2Image * m1, R2Image * m2, R2Image * m3, R2Image * m4,
+	     R2Image * projection)
 {
   /*
    * 1. Locate 4 markers in original image
@@ -1275,6 +1280,8 @@ ProjectImage(R2Image * otherImage, R2Image * projection)
    * Compute homography matrix from 4 points of original image to pBounds
    * Apply homography matrix 
    */
+
+  // locate 4 markers in original image
   
   double * H = computeHomographyMatrix(otherImage);
   std::vector< R2Point* > feats = GetBestFeatures();
