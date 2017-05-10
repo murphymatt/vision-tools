@@ -31,28 +31,6 @@ typedef enum {
 } R2ImageCompositeOperation;
 
 
-// auxilliary structure for harris score
-struct HarrisScore 
-{
-  int x;
-  int y;
-  double score;
-
-HarrisScore(int mX, int mY, double mScore) : x(mX), y(mY), score(mScore) {}
-};
-
-struct CoordPair
-{
-  int x1;
-  int y1;
-  int x2;
-  int y2;
-
-CoordPair(int mX1, int mY1, int mX2, int mY2) : 
-  x1(mX1), y1(mY1), x2(mX2), y2(mY2) {}
-};
-
-
 // Class definition
 
 class R2Image {
@@ -98,14 +76,18 @@ class R2Image {
   std::vector< std::pair <R2Point*, R2Point*> >
     computeFeaturePairs(R2Image* otherImage);
   R2Point* applyTransformationMatrix(R2Point* p, double* H);
-  double * computeHomographyMatrix(R2Image *otherImage);
+  double* computeHomographyMatrix(R2Image *otherImage);
   void mergePixels(int h_s, int h_f, int minX, int minY, double* H,
 		   R2Image * otherImage, R2Image * outputImage);
   double twoDeterminant(double m[4]);
   double threeDeterminant(double m[9]);
-  R2Pixel * interpolate(double width, double height);
+  R2Pixel* interpolate(double width, double height);
   double redRatio(int x, int y);
-
+  R2Point* Convolve(R2Image * subImage, int x, int y, int r);
+  double CompareBlock(R2Image * subImage);
+  void TrackMarkers(R2Image * marker1, R2Image * marker2,
+		    R2Image * marker3, R2Image * marker4);
+  double ImageSSD(R2Image * sub, int x0, int x1, int y0, int y1);
 
   // Linear filtering operations
   void SobelX();
@@ -128,7 +110,7 @@ class R2Image {
   void blendOtherImageTranslated(R2Image * otherImage);
   void blendOtherImageHomography(R2Image * otherImage);
   void ReplaceRed(R2Image * otherImage);
-  void ProjectImage(R2Image * otherImage);
+  void ProjectImage(R2Image * otherImage, R2Image * projection);
 
 
   // File reading/writing

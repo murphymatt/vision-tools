@@ -14,6 +14,16 @@
 #include "svd.h"
 
 
+struct pointComp
+{
+  inline bool operator() (std::pair< R2Point*, double > p1,
+			  std::pair< R2Point*, double > p2)
+  {
+    return p1.second > p2.second;
+  }
+};
+
+
 struct pixelComp
 {
   inline bool operator() (R2Pixel * p1, R2Pixel * p2)
@@ -22,14 +32,6 @@ struct pixelComp
   }
 };
 
-
-struct less_than_key
-{
-  inline bool operator() (const HarrisScore& hs1, const HarrisScore& hs2)
-  {
-    return (hs1.score > hs2.score);
-  }
-};
 
 ////////////////////////////////////////////////////////////////////////
 // Constructors/Destructors
@@ -484,47 +486,42 @@ getPixelMagnitude(int x, int y)
 std::vector< R2Point* > R2Image::
 GetBestFeatures(void)
 {
-  std::vector< HarrisScore > harris_list;
+  std::vector< std::pair< R2Point*, double > > points;
 
   for (int y=5; y<height-5; y++) {
     for (int x=5; x<width-5; x++) {
-      harris_list.push_back(HarrisScore(x, y, getPixelMagnitude(x,y)));
+      std::pair <R2Point*, double> pair (new R2Point(x,y), Pixel(x,y).Luminance());
+      points.push_back(pair);
     }
   }
 
-  // sort pixels by harris score
-  std::sort(harris_list.begin(), harris_list.end(), less_than_key());
+  // sort points by harris score
+  std::sort(points.begin(), points.end(), pointComp());
 
-  // determine 150 greatest threshold areas with distance at least 10 pixels
-  std::vector< HarrisScore > top_scores;
-  top_scores.push_back(harris_list.at(0));
+  // determine 150 greatest threshold areas with distance at least 10 points
+  std::vector< R2Point* > feats;
+  feats.push_back(points.at(0).first);
+  R2Point* cur = feats.at(0);
   bool isFar;
-  HarrisScore current = harris_list.at(0);
   int topScoreCount = 1;
 
-  for (int i = 1; i < harris_list.size(); i++) {
+  for (int i=1; i<points.size(); i++) {
     isFar = true;
-    current = harris_list.at(i);
-    for (int j = 0; j < top_scores.size(); j++) {
-      if (abs(current.x - top_scores.at(j).x) < 10 &&
-	  abs(current.y - top_scores.at(j).y) < 10) {
-        isFar = false;
-        break;
+    cur = points.at(i).first;
+    for (int j=0; j<feats.size(); j++) {
+      if (abs(cur->X() - feats.at(j)->X() < 10) &&
+	  abs(cur->Y() - feats.at(j)->Y()) < 10) {
+	isFar = false;
+	break;
       }
     }
-    if (isFar) { 
-      top_scores.push_back(current); 
+    if (isFar) {
+      feats.push_back(cur);
       topScoreCount++;
     }
-    if (topScoreCount >= 150) {
-      break;
-    }
+    if (topScoreCount >= 150) break;
   }
-  std::vector< R2Point* > feats;
-  for (int i=0; i<top_scores.size(); i++) {
-    HarrisScore hs = top_scores.at(i);
-    feats.push_back(new R2Point(hs.x, hs.y));
-  }
+
   return feats;
 }
 
@@ -1221,8 +1218,8 @@ double R2Image::
 ImageSSD(R2Image * sub, int x0, int x1, int y0, int y1)
 {
   double sum = 0;
-  for(int w=0; w<sub->X(); w++) {
-    for(int h=0; h<sub->Y(); h++) {
+  for(int w=0; w<sub->Width(); w++) {
+    for(int h=0; h<sub->Height(); h++) {
       
     }
   }
@@ -1232,19 +1229,26 @@ ImageSSD(R2Image * sub, int x0, int x1, int y0, int y1)
 R2Point* R2Image::
 Convolve(R2Image * subImage, int x, int y, int r)
 {
-  int w = subImage->X();
-  int h = subImage->Y();
+  int w = subImage->Width();
+  int h = subImage->Height();
 
   double minDiff = std::numeric_limits<double>::infinity(), diff;
   
   // iterate over a search window to determine the center location of the subimage
   for(int lx=x-r; lx<x+r; lx++) {
     for(int ly=y-r; ly<y+r; ly++) {
-      
+      diff = CompareBlock(subImage);
     }
   }
 }
 
+
+double R2Image::
+CompareBlock(R2Image * subImage )
+{
+
+}
+  
 
 void R2Image::
 TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * marker4)
@@ -1271,7 +1275,7 @@ ProjectImage(R2Image * otherImage, R2Image * projection)
    * Compute homography matrix from 4 points of original image to pBounds
    * Apply homography matrix 
    */
-
+  
   double * H = computeHomographyMatrix(otherImage);
   std::vector< R2Point* > feats = GetBestFeatures();
   R2Point *x, *xP;
