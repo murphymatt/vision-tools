@@ -1255,7 +1255,7 @@ CompareBlock(R2Image * subImage )
 }
 
 
-void R2Image::
+std::vector< R2Point* >  R2Image::
 TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * marker4)
 {
   // get coordinates of each marker
@@ -1263,14 +1263,14 @@ TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * 
   markerCoords.resize(4);
   
   // for each marker, convolve over image to determine location
-  
+
+  return markerCoords;
 }
 
 
 void R2Image::
 ProjectImage(R2Image * otherImage,
-	     R2Image * m1, R2Image * m2, R2Image * m3, R2Image * m4,
-	     R2Image * projection)
+	     R2Image * m1, R2Image * m2, R2Image * m3, R2Image * m4)
 {
   /*
    * 1. Locate 4 markers in original image
@@ -1282,7 +1282,8 @@ ProjectImage(R2Image * otherImage,
    */
 
   // locate 4 markers in original image
-  
+  std::vector< R2Point* > markerCoords = TrackMarkers(m1, m2, m3, m4);
+    
   double * H = computeHomographyMatrix(otherImage);
   std::vector< R2Point* > feats = GetBestFeatures();
   R2Point *x, *xP;

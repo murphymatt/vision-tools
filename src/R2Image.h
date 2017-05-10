@@ -85,8 +85,8 @@ class R2Image {
   double redRatio(int x, int y);
   R2Point* Convolve(R2Image * subImage, int x, int y, int r);
   double CompareBlock(R2Image * subImage);
-  void TrackMarkers(R2Image * marker1, R2Image * marker2,
-		    R2Image * marker3, R2Image * marker4);
+  std::vector< R2Point* > TrackMarkers(R2Image * marker1, R2Image * marker2,
+				       R2Image * marker3, R2Image * marker4);
   double ImageSSD(R2Image * sub, int x0, int x1, int y0, int y1);
 
   // Linear filtering operations
@@ -111,8 +111,7 @@ class R2Image {
   void blendOtherImageHomography(R2Image * otherImage);
   void ReplaceRed(R2Image * otherImage);
   void ProjectImage(R2Image * otherImage,
-		    R2Image * m1, R2Image * m2, R2Image * m3, R2Image * m4,
-		    R2Image * projection);
+		    R2Image * m1, R2Image * m2, R2Image * m3, R2Image * m4);
 
 
   // File reading/writing
