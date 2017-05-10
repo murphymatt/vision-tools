@@ -793,11 +793,11 @@ line(int x0, int x1, int y0, int y1, float r, float g, float b)
 
 
 double R2Image::
-SSD(int x0, int y0, R2Image * otherImage, int x1, int y1) 
+SSD(int x0, int y0, R2Image * otherImage, int x1, int y1, int dx, int dy) 
 {
   double sum = 0.;
-  for (int i=-5; i<=5; i++) {
-    for (int j=-5; j<=5; j++) {
+  for (int i=-1*dx; i<=dx; i++) {
+    for (int j=-dy; j<=dy; j++) {
       sum += (getPixelMagnitude(x0+i,y0+j) -
 	      otherImage->getPixelMagnitude(x1+i,y1+j)) *
 	(getPixelMagnitude(x0+i,y0+j) -
@@ -851,7 +851,7 @@ computeFeaturePairs(R2Image * otherImage) {
   
     for(int ly=minY; ly<maxY; ly++) {
       for (int lx=minX; lx<maxX; lx++) {
-        diff = SSD(pt->X(), pt->Y(), otherImage, lx, ly);
+        diff = SSD(pt->X(), pt->Y(), otherImage, lx, ly, 5, 5);
         if (diff < minDiff) { 
           minDiff = diff;
           cX = lx; 
@@ -1214,44 +1214,28 @@ ReplaceRed(R2Image * otherImage)
 }
 
 
-double R2Image::
-ImageSSD(R2Image * sub, int x0, int x1, int y0, int y1)
-{
-  double sum = 0;
-  for(int w=0; w<sub->Width(); w++) {
-    for(int h=0; h<sub->Height(); h++) {
-      
-    }
-  }
-  return sum;
-}
-
-
 R2Point* R2Image::
 Convolve(R2Image * subImage, int x, int y, int r)
 {
-  int w = subImage->Width();
-  int h = subImage->Height();
-
+  int dw = subImage->Width()/2;
+  int dh = subImage->Height()/2;
+  int fx=-1, fy=-1;
   double minDiff = std::numeric_limits<double>::infinity(), diff;
   
   // iterate over a search window to determine the center location of the subimage
   for(int lx=x-r; lx<x+r; lx++) {
     for(int ly=y-r; ly<y+r; ly++) {
-      diff = CompareBlock(subImage);
-      if (diff < minDiff) minDiff = diff;
+      if (lx-dw>=0 && lx+dw<Width() && ly-dh>=0 && ly+dh<Height()) {
+	diff = SSD(lx, ly, subImage, dw, dh, dw, dh);
+	if (diff < minDiff) {
+	  minDiff = diff;
+	  fx = lx, fy = ly;
+	}
+      }
     }
   }
-
-  return new R2Point(x,y);
-}
-
-
-double R2Image::
-CompareBlock(R2Image * subImage )
-{
-  double minDiff = std::numeric_limits<double>::infinity(), diff;
-  return minDiff;
+  
+  return new R2Point(fx,fy);
 }
 
 
@@ -1263,7 +1247,6 @@ TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * 
   markerCoords.resize(4);
   
   // for each marker, convolve over image to determine location
-
   return markerCoords;
 }
 

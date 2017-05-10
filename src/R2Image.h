@@ -72,7 +72,7 @@ class R2Image {
   double getPixelMagnitude(int x, int y);
   std::vector< R2Point* > GetBestFeatures(void);
   void line(int x0, int x1, int y0, int y1, float r, float g, float b);
-  double SSD(int x0, int y0, R2Image * otherImage, int x1, int y1);
+  double SSD(int x0, int y0, R2Image * otherImage, int x1, int y1, int dx, int dy);
   std::vector< std::pair <R2Point*, R2Point*> >
     computeFeaturePairs(R2Image* otherImage);
   R2Point* applyTransformationMatrix(R2Point* p, double* H);
@@ -87,7 +87,7 @@ class R2Image {
   double CompareBlock(R2Image * subImage);
   std::vector< R2Point* > TrackMarkers(R2Image * marker1, R2Image * marker2,
 				       R2Image * marker3, R2Image * marker4);
-  double ImageSSD(R2Image * sub, int x0, int x1, int y0, int y1);
+
 
   // Linear filtering operations
   void SobelX();
