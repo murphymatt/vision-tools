@@ -1223,8 +1223,8 @@ Convolve(R2Image * subImage, int x, int y, int r)
   double minDiff = std::numeric_limits<double>::infinity(), diff;
   
   // iterate over a search window to determine the center location of the subimage
-  for(int lx=x-r; lx<x+r; lx++) {
-    for(int ly=y-r; ly<y+r; ly++) {
+  for(int lx=x-r+dw; lx<x+r-dw; lx++) {
+    for(int ly=y-r+dh; ly<y+r-dh; ly++) {
       if (lx-dw>=0 && lx+dw<Width() && ly-dh>=0 && ly+dh<Height()) {
 	diff = SSD(lx, ly, subImage, dw, dh, dw, dh);
 	if (diff < minDiff) {
@@ -1272,7 +1272,12 @@ ProjectImage(R2Image * otherImage,
 
   // locate 4 markers in original image
   std::vector< R2Point* > markerCoords = TrackMarkers(m1, m2, m3, m4);
-    
+  for (int i=0; i<markerCoords.size(); i++) {
+    R2Point* pt = markerCoords.at(i);
+    this->DrawBox(pt->X(), pt->Y(), true);
+  }
+
+  /*
   double * H = computeHomographyMatrix(otherImage);
   std::vector< R2Point* > feats = GetBestFeatures();
   R2Point *x, *xP;
@@ -1281,6 +1286,7 @@ ProjectImage(R2Image * otherImage,
     xP = applyTransformationMatrix(x, H);
     line(x->X(), xP->X(), x->Y(), xP->Y(), 1, 0, 0);
   }
+  */
 }
 
 
