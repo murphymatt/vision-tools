@@ -1268,9 +1268,19 @@ TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * 
 
 
 std::vector< R2Point* > R2Image::
-TrackMarkerMovement(std::vector< R2Point* > markers)
+TrackMarkerMovement(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * marker4,
+		    std::vector< R2Point* > markers)
 {
+  int SEARCHWINDOW = 10;
+  std::vector< R2Point* > ret;
+  ret.resize(4);
 
+  ret.at(0)=Convolve(marker1, markers.at(0)->X(), markers.at(0)->Y());
+  ret.at(1)=Convolve(marker2, markers.at(1)->X(), markers.at(1)->Y());
+  ret.at(2)=Convolve(marker3, markers.at(2)->X(), markers.at(2)->Y());
+  ret.at(3)=Convolve(marker4, markers.at(3)->X(), markers.at(3)->Y());
+
+  return ret;
 }
 
 
