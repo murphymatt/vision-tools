@@ -1249,9 +1249,9 @@ TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * 
   // for each marker, convolve over image to determine location
   // assumes markers are originally in their respective quadrants of the image
   markerCoords.at(0)=Convolve(marker1, Width()/4, Height()/4, fmin(Width()/4, Height()/4));
-  markerCoords.at(0)=Convolve(marker1, 3*Width()/4, Height()/4, fmin(Width()/4, Height()/4));
-  markerCoords.at(0)=Convolve(marker1, Width()/4, 3*Height()/4, fmin(Width()/4, Height()/4));
-  markerCoords.at(0)=Convolve(marker1, 3*Width()/4, 3*Height()/4, fmin(Width()/4, Height()/4));
+  markerCoords.at(1)=Convolve(marker1, 3*Width()/4, Height()/4, fmin(Width()/4, Height()/4));
+  markerCoords.at(2)=Convolve(marker1, Width()/4, 3*Height()/4, fmin(Width()/4, Height()/4));
+  markerCoords.at(3)=Convolve(marker1, 3*Width()/4, 3*Height()/4, fmin(Width()/4, Height()/4));
 
   return markerCoords;
 }
@@ -1270,13 +1270,14 @@ ProjectImage(R2Image * otherImage,
    * Apply homography matrix 
    */
 
-  // locate 4 markers in original image
+  // locate 4 markers in original image and resize each box
   std::vector< R2Point* > markerCoords = TrackMarkers(m1, m2, m3, m4);
   for (int i=0; i<markerCoords.size(); i++) {
     R2Point* pt = markerCoords.at(i);
     this->DrawBox(pt->X(), pt->Y(), true);
   }
-
+  
+  
   /*
   double * H = computeHomographyMatrix(otherImage);
   std::vector< R2Point* > feats = GetBestFeatures();
