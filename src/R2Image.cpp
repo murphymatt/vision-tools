@@ -1249,9 +1249,9 @@ TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * 
   // for each marker, convolve over image to determine location
   // assumes markers are originally in their respective quadrants of the image
   markerCoords.at(0)=Convolve(marker1, Width()/4, Height()/4, fmin(Width()/4, Height()/4));
-  markerCoords.at(1)=Convolve(marker1, 3*Width()/4, Height()/4, fmin(Width()/4, Height()/4));
-  markerCoords.at(2)=Convolve(marker1, Width()/4, 3*Height()/4, fmin(Width()/4, Height()/4));
-  markerCoords.at(3)=Convolve(marker1, 3*Width()/4, 3*Height()/4, fmin(Width()/4, Height()/4));
+  markerCoords.at(1)=Convolve(marker2, 3*Width()/4, Height()/4, fmin(Width()/4, Height()/4));
+  markerCoords.at(2)=Convolve(marker3, Width()/4, 3*Height()/4, fmin(Width()/4, Height()/4));
+  markerCoords.at(3)=Convolve(marker4, 3*Width()/4, 3*Height()/4, fmin(Width()/4, Height()/4));
 
   return markerCoords;
 }
