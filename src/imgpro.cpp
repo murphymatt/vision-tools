@@ -47,9 +47,7 @@ static char options[] =
   "  -matchTranslation <file:other_image>\n"
   "  -matchHomography <file:other_image>\n"
   "  -medianfilter <int:window>\n"
-  "  -projectImage <file:other_image>\n"
-  "  -trackMarkers\n";
-
+  "  -projectImage <file:other_image>\n";
 
 
 static void 
@@ -246,7 +244,15 @@ main(int argc, char **argv)
       CheckOption(*argv, argc, 2);
       R2Image * other_image = new R2Image(argv[1]);
       argv += 2, argc -= 2;
-      image->ProjectImage(other_image, other_image, other_image, other_image, other_image);
+
+      // load marker images
+      R2Image
+	*marker_1 = new R2Image("../markers/marker_1.jpeg"),
+	*marker_2 = new R2Image("../markers/marker_2.jpeg"),
+	*marker_3 = new R2Image("../markers/marker_3.jpeg"),
+	*marker_4 = new R2Image("../markers/marker_4.jpeg");
+      
+      image->ProjectImage(other_image, marker_1, marker_2, marker_3, marker_4);
       delete other_image;
     }
     else if (!strcmp(*argv, "-trackMarkers")) {
