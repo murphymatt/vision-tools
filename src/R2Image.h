@@ -76,18 +76,19 @@ class R2Image {
   std::vector< std::pair <R2Point*, R2Point*> >
     computeFeaturePairs(R2Image* otherImage);
   R2Point* applyTransformationMatrix(R2Point* p, double* H);
-  double* computeHomographyMatrix(R2Image *otherImage);
-  void mergePixels(int h_s, int h_f, int minX, int minY, double* H,
+  double* BuildH(std::vector< std::pair< R2Point*, R2Point* > > cor);
+  double* ComputeHomographyMatrix(R2Image *otherImage);
+  void MergePixels(int h_s, int h_f, int minX, int minY, double* H,
 		   R2Image * otherImage, R2Image * outputImage);
   double twoDeterminant(double m[4]);
   double threeDeterminant(double m[9]);
   R2Pixel* interpolate(double width, double height);
   double redRatio(int x, int y);
-  R2Point* Convolve(R2Image * subImage, int x, int y, int dx, int dy);
+  R2Point* Convolve(R2Image * subImage, int x, int y);
   double CompareBlock(R2Image * subImage);
   std::vector< R2Point* > TrackMarkers(R2Image * marker1, R2Image * marker2,
 				       R2Image * marker3, R2Image * marker4);
-  void ResizeImage();
+  void ResizeImage(int w, int h);
 
 
   // Linear filtering operations

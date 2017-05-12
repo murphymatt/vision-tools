@@ -797,11 +797,10 @@ SSD(int x0, int y0, R2Image * otherImage, int x1, int y1, int dx, int dy)
 {
   double sum = 0.;
   for (int i=-1*dx; i<=dx; i++) {
-    for (int j=-dy; j<=dy; j++) {
-      sum += (getPixelMagnitude(x0+i,y0+j) -
-	      otherImage->getPixelMagnitude(x1+i,y1+j)) *
-	(getPixelMagnitude(x0+i,y0+j) -
-	 otherImage->getPixelMagnitude(x1+i,y1+j));
+    for (int j=-1*dy; j<=dy; j++) {
+      sum +=
+	(getPixelMagnitude(x0+i,y0+j) - otherImage->getPixelMagnitude(x1+i,y1+j)) *
+	(getPixelMagnitude(x0+i,y0+j) - otherImage->getPixelMagnitude(x1+i,y1+j));
     }
   }
   return sum;
@@ -980,7 +979,7 @@ interpolate(double w, double h)
 
 
 void R2Image::
-mergePixels(int h_s, int h_f, int minX, int minY, double* H,
+MergePixels(int h_s, int h_f, int minX, int minY, double* H,
 	    R2Image * otherImage, R2Image * outputImage) {
 
   R2Point *t;
@@ -1008,7 +1007,59 @@ mergePixels(int h_s, int h_f, int minX, int minY, double* H,
 
 
 double * R2Image::
-computeHomographyMatrix(R2Image *otherImage)
+BuildH(std::vector< std::pair< R2Point*, R2Point* > > cor)
+{
+  // for each point, compute the first two rows of A_i
+  int r;
+  double** A = dmatrix(1,2*cor.size(),1,9);
+  for (int i=0; i<cor.size(); i++) {
+    r=i*2+1;
+    A[r][1] = 0;
+    A[r][2] = 0;
+    A[r][3] = 0;
+    A[r][4] = -1 * cor.at(i).first->X();
+    A[r][5] = -1 * cor.at(i).first->Y();
+    A[r][6] = -1;
+    A[r][7] = cor.at(i).second->Y() * cor.at(i).first->X();
+    A[r][8] = cor.at(i).second->Y() * cor.at(i).first->Y();
+    A[r][9] = cor.at(i).second->Y();
+
+    r++;
+    A[r][1] = cor.at(i).first->X();
+    A[r][2] = cor.at(i).first->Y();
+    A[r][3] = 1;
+    A[r][4] = 0;
+    A[r][5] = 0;
+    A[r][6] = 0;
+    A[r][7] = -1 * cor.at(i).second->X() * cor.at(i).first->X();
+    A[r][8] = -1 * cor.at(i).second->X() * cor.at(i).first->Y();
+    A[r][9] = -1 * cor.at(i).second->X();
+  }
+    
+  // Obtain the SVD, use the singular vector corresponding to the smallest
+  // singular value
+  double singularValues[10]; // 1..10
+  double** nullspaceMatrix = dmatrix(1,9,1,9);
+  svdcmp(A, 2*cor.size(), 9, singularValues, nullspaceMatrix);
+
+  // get the result
+  int minIndex=1;
+  for (int i=2; i<10; i++) {
+    if (singularValues[i]<singularValues[minIndex]) minIndex = i;
+  }
+
+  double * H = (double*) malloc(sizeof(double) * 9);
+  for(int i=0; i<9; i++) {
+    H[i] = (1 / nullspaceMatrix[9][minIndex]) *
+      nullspaceMatrix[i+1][minIndex];
+  }
+
+  return H;
+}
+
+
+double * R2Image::
+ComputeHomographyMatrix(R2Image *otherImage)
 {
   std::vector< std::pair< R2Point*, R2Point* > > pairs =
     computeFeaturePairs(otherImage);
@@ -1030,51 +1081,8 @@ computeHomographyMatrix(R2Image *otherImage)
       cor.push_back(pairs.at(r));
     }
         
-    // for each point, compute the first two rows of A_i
-    int r;
-    double** A = dmatrix(1,2*cor.size(),1,9);
-    for (int i=0; i<cor.size(); i++) {
-      r=i*2+1;
-      A[r][1] = 0;
-      A[r][2] = 0;
-      A[r][3] = 0;
-      A[r][4] = -1 * cor.at(i).first->X();
-      A[r][5] = -1 * cor.at(i).first->Y();
-      A[r][6] = -1;
-      A[r][7] = cor.at(i).second->Y() * cor.at(i).first->X();
-      A[r][8] = cor.at(i).second->Y() * cor.at(i).first->Y();
-      A[r][9] = cor.at(i).second->Y();
-
-      r++;
-      A[r][1] = cor.at(i).first->X();
-      A[r][2] = cor.at(i).first->Y();
-      A[r][3] = 1;
-      A[r][4] = 0;
-      A[r][5] = 0;
-      A[r][6] = 0;
-      A[r][7] = -1 * cor.at(i).second->X() * cor.at(i).first->X();
-      A[r][8] = -1 * cor.at(i).second->X() * cor.at(i).first->Y();
-      A[r][9] = -1 * cor.at(i).second->X();
-    }
+    double* H = BuildH(cor);
     
-    // Obtain the SVD, use the singular vector corresponding to the smallest
-    // singular value
-    double singularValues[10]; // 1..10
-    double** nullspaceMatrix = dmatrix(1,9,1,9);
-    svdcmp(A, 2*cor.size(), 9, singularValues, nullspaceMatrix);
-
-    // get the result
-    int minIndex=1;
-    for (int i=2; i<10; i++) {
-      if (singularValues[i]<singularValues[minIndex]) minIndex = i;
-    }
-
-    double H[9];
-    for(int i=0; i<9; i++) {
-      H[i] = (1 / nullspaceMatrix[9][minIndex]) *
-	nullspaceMatrix[i+1][minIndex];
-    }
-
     // apply H to each point and compute difference between points
     int matchesToThis = 0;
     for (int i=0; i<pairs.size(); i++) {
@@ -1107,7 +1115,7 @@ blendOtherImageHomography(R2Image * otherImage)
   // find at least 100 features on this image, and another 100 on the "otherImage". Based on these,
   // compute the matching homography, and blend the transformed "otherImage" into this image with a 50% opacity.
 
-  double * H = computeHomographyMatrix(otherImage);
+  double * H = ComputeHomographyMatrix(otherImage);
   // invert H
 
   double det = threeDeterminant(H);
@@ -1170,7 +1178,7 @@ blendOtherImageHomography(R2Image * otherImage)
   // apply transformation to each pixel in the original image
   R2Image * tmp = new R2Image(nWidth, nHeight);
   
-  mergePixels(0, tmp->Height(), ceil(minX), ceil(minY), H, otherImage, tmp);
+  MergePixels(0, tmp->Height(), ceil(minX), ceil(minY), H, otherImage, tmp);
   
   // multithreading variables
   // const int nThreads = 4;
@@ -1215,22 +1223,22 @@ ReplaceRed(R2Image * otherImage)
 
 
 R2Point* R2Image::
-Convolve(R2Image * subImage, int x, int y, int dx, int dy)
+Convolve(R2Image * subImage, int x, int y)
 {
-  int dw = subImage->Width()/2;
-  int dh = subImage->Height()/2;
+  int sW = subImage->Width(), sH = subImage->Height();
+  int lower_x = x + sW/2, upper_x = x + Width()/2 - sW/2;
+  int lower_y = y + sH/2, upper_y = y + Height()/2 - sH/2;
+
   int fx=-1, fy=-1;
   double minDiff = std::numeric_limits<double>::infinity(), diff;
   
   // iterate over a search window to determine the center location of the subimage
-  for(int lx=x-dx+dw; lx<x+dx-dw; lx++) {
-    for(int ly=y-dx+dh; ly<y+dy-dh; ly++) {
-      if (lx-dw>=0 && lx+dw<Width() && ly-dh>=0 && ly+dh<Height()) {
-	diff = SSD(lx, ly, subImage, dw, dh, dw, dh);
-	if (diff < minDiff) {
-	  minDiff = diff;
-	  fx = lx, fy = ly;
-	}
+  for(int lx=lower_x; lx<upper_x; lx++) {
+    for(int ly=lower_y; ly<upper_y; ly++) {
+      diff = SSD(lx, ly, subImage, sW/2, sH/2, sW/2, sH/2);
+      if (diff < minDiff) {
+	minDiff = diff;
+	fx = lx, fy = ly;
       }
     }
   }
@@ -1246,66 +1254,88 @@ TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * 
   std::vector< R2Point* > markerCoords;
   markerCoords.resize(4);
 
-  int w = Width()/4, h = Height() / 4;
+  int w = Width()/2, h = Height()/2;
   
   // for each marker, convolve over image to determine location
   // assumes markers are originally in their respective quadrants of the image
-  markerCoords.at(0)=Convolve(marker1, Width()/4, Height()/4, w, h);
-  markerCoords.at(1)=Convolve(marker2, 3*Width()/4, Height()/4, w, h);
-  markerCoords.at(2)=Convolve(marker3, Width()/4, 3*Height()/4, w, h);
-  markerCoords.at(3)=Convolve(marker4, 3*Width()/4, 3*Height()/4, w, h);
+  markerCoords.at(0)=Convolve(marker1, 0, 0);
+  markerCoords.at(1)=Convolve(marker2, w, 0);
+  markerCoords.at(2)=Convolve(marker3, 0, h);
+  markerCoords.at(3)=Convolve(marker4, w, h);
 
   return markerCoords;
 }
 
 
-void R2Image::
-resizeImage(int w, int h)
+std::vector< R2Point* > R2Image::
+TrackMarkerMovement(std::vector< R2Point* > markers)
 {
-  R2Image * tmp = new R2Image(w,h);
-  int iw = Width(), ih = Height();
-  for (int i = iw/2 - w/2; i < iw/2 + w/2; i++) {
-    for (int j = ih/2 - h/2; j < ih/2 + w/2; j++) {
-      tmp->Pixel(i,j) = Pixel(i,j);
-    }
-  }
-  *this = *tmp;
+
 }
 
 
 void R2Image::
-ProjectImage(R2Image * otherImage,
-	     R2Image * m1, R2Image * m2, R2Image * m3, R2Image * m4)
+ResizeImage(int w, int h)
+{
+  R2Image * tmp = new R2Image(w,h);
+  int iw = Width(), ih = Height();
+  for (int i = iw/2 - w/2; i < iw/2 + w/2; i++) {
+    for (int j = ih/2 - h/2; j < ih/2 + h/2; j++) {
+      tmp->Pixel(i - (iw/2 - w/2), j - (ih/2 - h/2)) = Pixel(i, j);
+    }
+  }
+  *this = *tmp;
+  delete tmp;
+}
+
+
+void R2Image::
+ProjectImage(R2Image * otherImage, R2Image * m1, R2Image * m2, R2Image * m3, R2Image * m4)
 {
   /*
    * 1. Locate 4 markers in original image
    * 2. Create projection canvas from 4 markers
    * ...
    * 
-   * Compute homography matrix from 4 points of original image to pBounds
+   * Compute homography matrix from 4 points of original image
    * Apply homography matrix 
    */
-
   
-  /*
   // normalize each of the marker subimages
   int SUBIMAGE_WIDTH = 40, SUBIMAGE_HEIGHT = 40;
-  m1->resizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-  m2->resizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-  m3->resizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-  m4->resizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-  */
+  m1->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+  m2->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+  m3->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+  m4->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
 
-  // locate 4 markers in original image and resize each box
-  std::vector< R2Point* > markerCoords = TrackMarkers(m1, m2, m3, m4);
-  for (int i=0; i<markerCoords.size(); i++) {
-    R2Point* pt = markerCoords.at(i);
+  // locate 4 markers in original image
+  std::vector< R2Point* > markerCoords0 = TrackMarkers(m1, m2, m3, m4);
+  for (int i=0; i<markerCoords0.size(); i++) {
+    R2Point* pt = markerCoords0.at(i);
     this->DrawBox(pt->X(), pt->Y(), true);
   }
-  
 
+  // locate 4 markers in other image
+  std::vector< R2Point* > markerCoords1 = TrackMarkerMovement(markerCoords0);
+  for (int i=0; i<markerCoords1.size(); i++) {
+    R2Point* pt = markerCoords1.at(i);
+    this->DrawBox(pt->X(), pt->Y(), true);
+  }
+
+  // create vector of pairs of marker coordinates
+  std::vector< std::pair< R2Point*, R2Point* > > cor;
+  cor.resize(4);
+  for (int i=0; i<markerCoords0.size(); i++) {
+    std::pair< R2Point*, R2Point* > p (markerCoords0.at(i), markerCoords1.at(i));
+    cor.at(i) = p;
+  }
+
+  double * H = BuildH(cor);
+  for (int i = 0; i<9; i++) {
+    printf("%lf\n", H[i]);
+  }
+    
   /*
-  double * H = computeHomographyMatrix(otherImage);
   std::vector< R2Point* > feats = GetBestFeatures();
   R2Point *x, *xP;
   for (int i=0; i<feats.size(); i++) {
