@@ -1237,14 +1237,14 @@ Convolve(R2Image * subImage, int x, int y, int dx, int dy, bool b)
   double fx=-1, fy=-1;
   double minDiff = std::numeric_limits<double>::infinity(), diff;
 
-  printf("lower_y = %d, upper_y = %d\n", lower_y, upper_y);
-  printf("lower_x = %d, upper_x = %d\n", lower_x, upper_x);
+  //printf("lower_y = %d, upper_y = %d\n", lower_y, upper_y);
+  //printf("lower_x = %d, upper_x = %d\n", lower_x, upper_x);
   
   // iterate over a search window to determine the center location of the subimage
   for(int ly=lower_y; ly<upper_y; ly++) {
     for(int lx=lower_x; lx<upper_x; lx++) {
       diff = SSD(lx, ly, subImage, sW/2, sH/2, sW/2, sH/2);
-      if (b) printf("diff = %f\n", diff);
+      //if (b) printf("diff = %f\n", diff);
       if (diff < minDiff) {
 	minDiff = diff;
 	fx = lx;
@@ -1275,20 +1275,20 @@ TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * 
 
   int w = Width()/2, h = Height()/2;
 
-  /*
   // 2 each marker, convolve over image to determine location
   //assumes markers are originally in their respective quadrants of the image
-  markerCoords.at(0)=Convolve(marker1, 0, 0, w, h);
-  markerCoords.at(1)=Convolve(marker2, w, 0, w, h);
-  markerCoords.at(2)=Convolve(marker3, 0, h, w, h);
-  markerCoords.at(3)=Convolve(marker4, w, h, w, h);
-  */
-  
+  markerCoords.at(0)=Convolve(marker1, 0, h, w, h, true);
+  markerCoords.at(1)=Convolve(marker2, w, h, w, h, false);
+  markerCoords.at(2)=Convolve(marker3, 0, 0, w, h, false);
+  markerCoords.at(3)=Convolve(marker4, w, 0, w, h, true);
+
+  /*
   markerCoords.at(0) = new R2Point(349, Height() - 121);
   markerCoords.at(1) = new R2Point(1462, Height() - 185);
   markerCoords.at(2) = new R2Point(371, Height() - 778);
   markerCoords.at(3) = new R2Point(1388, Height() - 941);
-  
+  */
+    
   return markerCoords;
 }
 
@@ -1350,13 +1350,12 @@ ProjectImage(R2Image * otherImage,
    */
   
   // normalize each of the marker subimages
-  /*
+
   int SUBIMAGE_WIDTH = 41, SUBIMAGE_HEIGHT = 41;
   m1->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m2->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m3->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m4->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-  */
 
   // locate 4 markers in original image
   
