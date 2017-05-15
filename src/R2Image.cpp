@@ -793,14 +793,14 @@ line(int x0, int x1, int y0, int y1, float r, float g, float b)
 
 
 double R2Image::
-SSD(int x0, int y0, R2Image * otherImage, int x1, int y1, int dx, int dy) 
+SSD(double x1, double y1, R2Image * otherImage, double x2, double y2, double dx, double dy) 
 {
   double sum = 0.;
   for (int i=-1*dx; i<=dx; i++) {
     for (int j=-1*dy; j<=dy; j++) {
       sum +=
-	(getPixelMagnitude(x0+i,y0+j) - otherImage->getPixelMagnitude(x1+i,y1+j)) *
-	(getPixelMagnitude(x0+i,y0+j) - otherImage->getPixelMagnitude(x1+i,y1+j));
+	(getPixelMagnitude(x1+i,y1+j) - otherImage->getPixelMagnitude(x2+i,y2+j)) *
+	(getPixelMagnitude(x1+i,y1+j) - otherImage->getPixelMagnitude(x2+i,y2+j));
     }
   }
   return sum;
@@ -907,7 +907,7 @@ blendOtherImageTranslated(R2Image * otherImage)
     std::pair<R2Point*, R2Point*>
       pr1(pairs.at(i).first, pairs.at(i).second);
     if (vecDiffMagnitude(pr0,pr1) < THRESHOLD) {
-      DrawBox(pr0.first->X(), pr1.first->Y(), true);
+      DrawBox(pr0.first->X(), pr0.first->Y(), true);
       line(pr1.first->X(), pr1.second->X(),
 	   pr1.first->Y(), pr1.second->Y(), 0, 1, 0);
     } else {
@@ -1053,7 +1053,7 @@ BuildH(std::vector< std::pair< R2Point*, R2Point* > > cor)
     H[i] = (1 / nullspaceMatrix[9][minIndex]) *
       nullspaceMatrix[i+1][minIndex];
   }
-
+  
   return H;
 }
 
@@ -1071,6 +1071,7 @@ ComputeHomographyMatrix(R2Image *otherImage)
   int THRESHOLD  = 4;
   int mostMatches = 0;
 
+  double* H;
   for (int j=0; j<ITERATIONS; j++) {
     
     // DLT to compute H matrix
@@ -1081,7 +1082,7 @@ ComputeHomographyMatrix(R2Image *otherImage)
       cor.push_back(pairs.at(r));
     }
         
-    double* H = BuildH(cor);
+    H = BuildH(cor);
     
     // apply H to each point and compute difference between points
     int matchesToThis = 0;
@@ -1113,7 +1114,7 @@ double * R2Image::
 InvertHomographyMatrix(double* H)
 {
   double det = threeDeterminant(H);
-  double ret[9];
+  double * ret = (double*)malloc(9 * sizeof(double));
 
   double tmp0[4] = {H[4], H[5], H[7], H[8]};
   ret[0] = (1/ det) * twoDeterminant(tmp0);
@@ -1227,19 +1228,23 @@ ReplaceRed(R2Image * otherImage)
 
 
 R2Point* R2Image::
-Convolve(R2Image * subImage, int x, int y, int dx, int dy)
+Convolve(R2Image * subImage, int x, int y, int dx, int dy, bool b)
 {
   int sW = subImage->Width(), sH = subImage->Height();
-  int lower_x = x + sW/2, upper_x = x + dx - sW/2;
-  int lower_y = y + sH/2, upper_y = y + dy - sH/2;
+  int lower_x = fmax(x, sW/2), upper_x = fmin(x + dx, Width() - sW/2);
+  int lower_y = fmax(y, sH/2), upper_y = fmin(y + dy, Height() - sH/2);
 
-  int fx=-1, fy=-1;
+  double fx=-1, fy=-1;
   double minDiff = std::numeric_limits<double>::infinity(), diff;
+
+  printf("lower_y = %d, upper_y = %d\n", lower_y, upper_y);
+  printf("lower_x = %d, upper_x = %d\n", lower_x, upper_x);
   
   // iterate over a search window to determine the center location of the subimage
   for(int ly=lower_y; ly<upper_y; ly++) {
     for(int lx=lower_x; lx<upper_x; lx++) {
       diff = SSD(lx, ly, subImage, sW/2, sH/2, sW/2, sH/2);
+      if (b) printf("diff = %f\n", diff);
       if (diff < minDiff) {
 	minDiff = diff;
 	fx = lx;
@@ -1255,7 +1260,7 @@ Convolve(R2Image * subImage, int x, int y, int dx, int dy)
 void R2Image::
 MarkSubimage(R2Image * subImage)
 {
-  R2Point * pt = Convolve(subImage, Width()/2 - 100, Height()/2 - 100, Width()/4, Height()/4);
+  R2Point * pt = Convolve(subImage, Width()/2 - 100, Height()/2 - 100, Width()/4, Height()/4, false);
   this->DrawBox(pt->X(), pt->Y(), true);
   delete pt;
 }  
@@ -1269,14 +1274,21 @@ TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * 
   markerCoords.resize(4);
 
   int w = Width()/2, h = Height()/2;
-  
-  // 2 each marker, convolve over image to determine location
-  // assumes markers are originally in their respective quadrants of the image
-  markerCoords.at(0)=Convolve(marker1, 0, 0, Width(), Height());
-  markerCoords.at(1)=Convolve(marker2, 0, 0, Width(), Height());
-  markerCoords.at(2)=Convolve(marker3, 0, 0, Width(), Height());
-  markerCoords.at(3)=Convolve(marker4, 0, 0, Width(), Height());
 
+  /*
+  // 2 each marker, convolve over image to determine location
+  //assumes markers are originally in their respective quadrants of the image
+  markerCoords.at(0)=Convolve(marker1, 0, 0, w, h);
+  markerCoords.at(1)=Convolve(marker2, w, 0, w, h);
+  markerCoords.at(2)=Convolve(marker3, 0, h, w, h);
+  markerCoords.at(3)=Convolve(marker4, w, h, w, h);
+  */
+  
+  markerCoords.at(0) = new R2Point(349, Height() - 121);
+  markerCoords.at(1) = new R2Point(1462, Height() - 185);
+  markerCoords.at(2) = new R2Point(371, Height() - 778);
+  markerCoords.at(3) = new R2Point(1388, Height() - 941);
+  
   return markerCoords;
 }
 
@@ -1292,19 +1304,19 @@ TrackMarkerMovement(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2I
   ret.at(0)=Convolve(marker1,
 		     markers.at(0)->X() - SEARCHWINDOW / 2,
 		     markers.at(0)->Y() - SEARCHWINDOW / 2,
-		     SEARCHWINDOW, SEARCHWINDOW);
+		     SEARCHWINDOW, SEARCHWINDOW, true);
   ret.at(1)=Convolve(marker2,
 		     markers.at(1)->X() - SEARCHWINDOW / 2,
 		     markers.at(1)->Y() - SEARCHWINDOW / 2,
-		     SEARCHWINDOW, SEARCHWINDOW);
+		     SEARCHWINDOW, SEARCHWINDOW, false);
   ret.at(2)=Convolve(marker3,
 		     markers.at(2)->X() - SEARCHWINDOW / 2,
 		     markers.at(2)->Y() - SEARCHWINDOW / 2,
-		     SEARCHWINDOW, SEARCHWINDOW);
+		     SEARCHWINDOW, SEARCHWINDOW, false);
   ret.at(3)=Convolve(marker4,
 		     markers.at(3)->X() - SEARCHWINDOW / 2,
 		     markers.at(3)->Y() - SEARCHWINDOW / 2,
-		     SEARCHWINDOW, SEARCHWINDOW);
+		     SEARCHWINDOW, SEARCHWINDOW, true);
 
   return ret;
 }
@@ -1323,7 +1335,6 @@ ResizeImage(int w, int h)
   *this = *tmp;
   delete tmp;
 }
-
 
 void R2Image::
 ProjectImage(R2Image * otherImage,
@@ -1348,19 +1359,22 @@ ProjectImage(R2Image * otherImage,
   */
 
   // locate 4 markers in original image
+  
   std::vector< R2Point* > markerCoords = TrackMarkers(m1, m2, m3, m4);
+  R2Point* pt;
   for (int i=0; i<markerCoords.size(); i++) {
-    R2Point* pt = markerCoords.at(i);
-    this->DrawBox(pt->X(), pt->Y(), true);
+    pt = markerCoords.at(i);
+    DrawBox(pt->X(), pt->Y(), true);
     printf("x = %f, y = %f\n", pt->X(), pt->Y());
   }
 
   std::vector< std::pair< R2Point*, R2Point* > > cor;
+  cor.resize(4);
 
-  std::pair< R2Point*, R2Point* > p0 (new R2Point(0,0), markerCoords.at(0));
-  std::pair< R2Point*, R2Point* > p1 (new R2Point(Width(),0), markerCoords.at(1));
-  std::pair< R2Point*, R2Point* > p2 (new R2Point(0,Height()), markerCoords.at(2));
-  std::pair< R2Point*, R2Point* > p3 (new R2Point(Width(),Height()), markerCoords.at(3));
+  std::pair< R2Point*, R2Point* > p0 (new R2Point(0,Height()), markerCoords.at(0));
+  std::pair< R2Point*, R2Point* > p1 (new R2Point(Width(),Height()), markerCoords.at(1));
+  std::pair< R2Point*, R2Point* > p2 (new R2Point(0,0), markerCoords.at(2));
+  std::pair< R2Point*, R2Point* > p3 (new R2Point(Width(),0), markerCoords.at(3));
 
   cor.at(0) = p0;
   cor.at(1) = p1;
@@ -1373,6 +1387,17 @@ ProjectImage(R2Image * otherImage,
     printf("%lf\n", H[i]);
   }
 
+
+  // determine location of markers in next image
+  markerCoords = otherImage->TrackMarkerMovement(m1, m2, m3, m4, markerCoords);
+  for (int i=0; i<markerCoords.size(); i++) {
+    pt = markerCoords.at(i);
+    DrawBox(pt->X(), pt->Y(), true);
+    printf("x = %f, y = %f\n", pt->X(), pt->Y());
+  }
+
+  
+  
   /*
   std::vector< R2Point* > feats = GetBestFeatures();
   R2Point *x, *xP;

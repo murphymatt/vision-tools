@@ -72,7 +72,8 @@ class R2Image {
   double getPixelMagnitude(int x, int y);
   std::vector< R2Point* > GetBestFeatures(void);
   void line(int x0, int x1, int y0, int y1, float r, float g, float b);
-  double SSD(int x0, int y0, R2Image * otherImage, int x1, int y1, int dx, int dy);
+  double SSD(double x0, double y0, R2Image * otherImage,
+	     double x1, double y1, double dx, double dy);
   std::vector< std::pair <R2Point*, R2Point*> >
     computeFeaturePairs(R2Image* otherImage);
   R2Point* applyTransformationMatrix(R2Point* p, double* H);
@@ -85,7 +86,7 @@ class R2Image {
   double threeDeterminant(double m[9]);
   R2Pixel* interpolate(double width, double height);
   double redRatio(int x, int y);
-  R2Point* Convolve(R2Image * subImage, int x, int y, int dx, int dy);
+  R2Point* Convolve(R2Image * subImage, int x, int y, int dx, int dy, bool b);
   void MarkSubimage(R2Image * subImage);
   double CompareBlock(R2Image * subImage);
   std::vector< R2Point* >
