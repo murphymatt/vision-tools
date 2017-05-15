@@ -78,6 +78,7 @@ class R2Image {
   R2Point* applyTransformationMatrix(R2Point* p, double* H);
   double* BuildH(std::vector< std::pair< R2Point*, R2Point* > > cor);
   double* ComputeHomographyMatrix(R2Image *otherImage);
+  double* InvertHomographyMatrix(double* H);
   void MergePixels(int h_s, int h_f, int minX, int minY, double* H,
 		   R2Image * otherImage, R2Image * outputImage);
   double twoDeterminant(double m[4]);

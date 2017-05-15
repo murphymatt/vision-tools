@@ -1109,6 +1109,35 @@ ComputeHomographyMatrix(R2Image *otherImage)
 }
 
 
+double * R2Image::
+InvertHomographyMatrix(double* H)
+{
+  double det = threeDeterminant(H);
+  double ret[9];
+
+  double tmp0[4] = {H[4], H[5], H[7], H[8]};
+  ret[0] = (1/ det) * twoDeterminant(tmp0);
+  double tmp1[4] = {H[2], H[1], H[8], H[7]};
+  ret[1] = (1/ det) * twoDeterminant(tmp1);
+  double tmp2[4] = {H[1], H[2], H[4], H[5]};
+  ret[2] = (1/ det) * twoDeterminant(tmp2);
+  double tmp3[4] = {H[5], H[3], H[8], H[6]};
+  ret[3] = (1/ det) * twoDeterminant(tmp3);
+  double tmp4[4] = {H[0], H[2], H[6], H[8]};
+  ret[4] = (1/ det) * twoDeterminant(tmp4);
+  double tmp5[4] = {H[2], H[0], H[5], H[3]};
+  ret[5] = (1/ det) * twoDeterminant(tmp5);
+  double tmp6[4] = {H[3], H[4], H[6], H[7]};
+  ret[6] = (1/ det) * twoDeterminant(tmp6);
+  double tmp7[4] = {H[1], H[0], H[7], H[6]};
+  ret[7] = (1/ det) * twoDeterminant(tmp7);
+  double tmp8[4] = {H[0], H[1], H[3], H[4]};
+  ret[8] = (1/ det) * twoDeterminant(tmp8);
+
+  return ret;
+}
+
+
 void R2Image::
 blendOtherImageHomography(R2Image * otherImage)
 {
@@ -1118,32 +1147,7 @@ blendOtherImageHomography(R2Image * otherImage)
   double * H = ComputeHomographyMatrix(otherImage);
   // invert H
 
-  double det = threeDeterminant(H);
-  double ret[9];
-
-  double tmp0[4] = {H[4], H[5], H[7], H[8]};
-  ret[0] = twoDeterminant(tmp0);
-  double tmp1[4] = {H[2], H[1], H[8], H[7]};
-  ret[1] = twoDeterminant(tmp1);
-  double tmp2[4] = {H[1], H[2], H[4], H[5]};
-  ret[2] = twoDeterminant(tmp2);
-  double tmp3[4] = {H[5], H[3], H[8], H[6]};
-  ret[3] = twoDeterminant(tmp3);
-  double tmp4[4] = {H[0], H[2], H[6], H[8]};
-  ret[4] = twoDeterminant(tmp4);
-  double tmp5[4] = {H[2], H[0], H[5], H[3]};
-  ret[5] = twoDeterminant(tmp5);
-  double tmp6[4] = {H[3], H[4], H[6], H[7]};
-  ret[6] = twoDeterminant(tmp6);
-  double tmp7[4] = {H[1], H[0], H[7], H[6]};
-  ret[7] = twoDeterminant(tmp7);
-  double tmp8[4] = {H[0], H[1], H[3], H[4]};
-  ret[8] = twoDeterminant(tmp8);
-  for (int i=0; i<9; i++) {
-    H[i] = (1 / det) * ret[i];
-  }
-
-
+  H = InvertHomographyMatrix(H);
   // apply transformation matrix to corners of original image to
   //   determine bounds of transformed image
   R2Point * tl = new R2Point(0,0);
@@ -1345,11 +1349,13 @@ ProjectImage(R2Image * otherImage,
 
   // locate 4 markers in original image
   std::vector< R2Point* > markerCoords = TrackMarkers(m1, m2, m3, m4);
-  for (int i=0; i<markerCoords0.size(); i++) {
-    R2Point* pt = markerCoords0.at(i);
+  for (int i=0; i<markerCoords.size(); i++) {
+    R2Point* pt = markerCoords.at(i);
     this->DrawBox(pt->X(), pt->Y(), true);
-    printf("x = %d, y = %d\n", pt->X(), pt->Y());
+    printf("x = %f, y = %f\n", pt->X(), pt->Y());
   }
+
+  std::vector< std::pair< R2Point*, R2Point* > > cor;
 
   std::pair< R2Point*, R2Point* > p0 (new R2Point(0,0), markerCoords.at(0));
   std::pair< R2Point*, R2Point* > p1 (new R2Point(Width(),0), markerCoords.at(1));
