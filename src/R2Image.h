@@ -84,10 +84,14 @@ class R2Image {
   double threeDeterminant(double m[9]);
   R2Pixel* interpolate(double width, double height);
   double redRatio(int x, int y);
-  R2Point* Convolve(R2Image * subImage, int x, int y);
+  R2Point* Convolve(R2Image * subImage, int x, int y, int dx, int dy);
+  void MarkSubimage(R2Image * subImage);
   double CompareBlock(R2Image * subImage);
-  std::vector< R2Point* > TrackMarkers(R2Image * marker1, R2Image * marker2,
-				       R2Image * marker3, R2Image * marker4);
+  std::vector< R2Point* >
+    TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * marker4);
+  std::vector< R2Point* >
+    TrackMarkerMovement(R2Image * marker1, R2Image * marker2, R2Image * marker3,
+			R2Image * marker4, std::vector< R2Point* > markers);
   void ResizeImage(int w, int h);
 
 

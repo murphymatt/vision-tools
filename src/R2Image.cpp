@@ -842,9 +842,9 @@ computeFeaturePairs(R2Image * otherImage) {
   for (int i=0; i<features.size(); i++) {
     R2Point * pt = features.at(i);
     int minX = fmax(pt->X() - searchWindowX, 5),
-        maxX = fmin(pt->X() + searchWindowX, width-5);
-    int minY = fmax(pt->Y() - searchWindowY, 5),
-        maxY = fmin(pt->Y() + searchWindowY, height-5);
+      maxX = fmin(pt->X() + searchWindowX, width-5),
+      minY = fmax(pt->Y() - searchWindowY, 5),
+      maxY = fmin(pt->Y() + searchWindowY, height-5);
     double minDiff = std::numeric_limits<double>::infinity(), diff;
     int cX = 0, cY = 0;
   
@@ -1223,22 +1223,23 @@ ReplaceRed(R2Image * otherImage)
 
 
 R2Point* R2Image::
-Convolve(R2Image * subImage, int x, int y)
+Convolve(R2Image * subImage, int x, int y, int dx, int dy)
 {
   int sW = subImage->Width(), sH = subImage->Height();
-  int lower_x = x + sW/2, upper_x = x + Width()/2 - sW/2;
-  int lower_y = y + sH/2, upper_y = y + Height()/2 - sH/2;
+  int lower_x = x + sW/2, upper_x = x + dx - sW/2;
+  int lower_y = y + sH/2, upper_y = y + dy - sH/2;
 
   int fx=-1, fy=-1;
   double minDiff = std::numeric_limits<double>::infinity(), diff;
   
   // iterate over a search window to determine the center location of the subimage
-  for(int lx=lower_x; lx<upper_x; lx++) {
-    for(int ly=lower_y; ly<upper_y; ly++) {
+  for(int ly=lower_y; ly<upper_y; ly++) {
+    for(int lx=lower_x; lx<upper_x; lx++) {
       diff = SSD(lx, ly, subImage, sW/2, sH/2, sW/2, sH/2);
       if (diff < minDiff) {
 	minDiff = diff;
-	fx = lx, fy = ly;
+	fx = lx;
+	fy = ly;
       }
     }
   }
@@ -1247,7 +1248,16 @@ Convolve(R2Image * subImage, int x, int y)
 }
 
 
-std::vector< R2Point* >  R2Image::
+void R2Image::
+MarkSubimage(R2Image * subImage)
+{
+  R2Point * pt = Convolve(subImage, Width()/2 - 100, Height()/2 - 100, Width()/4, Height()/4);
+  this->DrawBox(pt->X(), pt->Y(), true);
+  delete pt;
+}  
+
+
+std::vector< R2Point* > R2Image::
 TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * marker4)
 {
   // get coordinates of each marker
@@ -1256,12 +1266,12 @@ TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * 
 
   int w = Width()/2, h = Height()/2;
   
-  // for each marker, convolve over image to determine location
+  // 2 each marker, convolve over image to determine location
   // assumes markers are originally in their respective quadrants of the image
-  markerCoords.at(0)=Convolve(marker1, 0, 0);
-  markerCoords.at(1)=Convolve(marker2, w, 0);
-  markerCoords.at(2)=Convolve(marker3, 0, h);
-  markerCoords.at(3)=Convolve(marker4, w, h);
+  markerCoords.at(0)=Convolve(marker1, 0, 0, Width(), Height());
+  markerCoords.at(1)=Convolve(marker2, 0, 0, Width(), Height());
+  markerCoords.at(2)=Convolve(marker3, 0, 0, Width(), Height());
+  markerCoords.at(3)=Convolve(marker4, 0, 0, Width(), Height());
 
   return markerCoords;
 }
@@ -1275,10 +1285,22 @@ TrackMarkerMovement(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2I
   std::vector< R2Point* > ret;
   ret.resize(4);
 
-  ret.at(0)=Convolve(marker1, markers.at(0)->X(), markers.at(0)->Y());
-  ret.at(1)=Convolve(marker2, markers.at(1)->X(), markers.at(1)->Y());
-  ret.at(2)=Convolve(marker3, markers.at(2)->X(), markers.at(2)->Y());
-  ret.at(3)=Convolve(marker4, markers.at(3)->X(), markers.at(3)->Y());
+  ret.at(0)=Convolve(marker1,
+		     markers.at(0)->X() - SEARCHWINDOW / 2,
+		     markers.at(0)->Y() - SEARCHWINDOW / 2,
+		     SEARCHWINDOW, SEARCHWINDOW);
+  ret.at(1)=Convolve(marker2,
+		     markers.at(1)->X() - SEARCHWINDOW / 2,
+		     markers.at(1)->Y() - SEARCHWINDOW / 2,
+		     SEARCHWINDOW, SEARCHWINDOW);
+  ret.at(2)=Convolve(marker3,
+		     markers.at(2)->X() - SEARCHWINDOW / 2,
+		     markers.at(2)->Y() - SEARCHWINDOW / 2,
+		     SEARCHWINDOW, SEARCHWINDOW);
+  ret.at(3)=Convolve(marker4,
+		     markers.at(3)->X() - SEARCHWINDOW / 2,
+		     markers.at(3)->Y() - SEARCHWINDOW / 2,
+		     SEARCHWINDOW, SEARCHWINDOW);
 
   return ret;
 }
@@ -1300,7 +1322,8 @@ ResizeImage(int w, int h)
 
 
 void R2Image::
-ProjectImage(R2Image * otherImage, R2Image * m1, R2Image * m2, R2Image * m3, R2Image * m4)
+ProjectImage(R2Image * otherImage,
+	     R2Image * m1, R2Image * m2, R2Image * m3, R2Image * m4)
 {
   /*
    * 1. Locate 4 markers in original image
@@ -1312,39 +1335,38 @@ ProjectImage(R2Image * otherImage, R2Image * m1, R2Image * m2, R2Image * m3, R2I
    */
   
   // normalize each of the marker subimages
-  int SUBIMAGE_WIDTH = 40, SUBIMAGE_HEIGHT = 40;
+  /*
+  int SUBIMAGE_WIDTH = 41, SUBIMAGE_HEIGHT = 41;
   m1->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m2->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m3->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m4->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+  */
 
   // locate 4 markers in original image
-  std::vector< R2Point* > markerCoords0 = TrackMarkers(m1, m2, m3, m4);
+  std::vector< R2Point* > markerCoords = TrackMarkers(m1, m2, m3, m4);
   for (int i=0; i<markerCoords0.size(); i++) {
     R2Point* pt = markerCoords0.at(i);
     this->DrawBox(pt->X(), pt->Y(), true);
+    printf("x = %d, y = %d\n", pt->X(), pt->Y());
   }
 
-  // locate 4 markers in other image
-  std::vector< R2Point* > markerCoords1 = TrackMarkerMovement(markerCoords0);
-  for (int i=0; i<markerCoords1.size(); i++) {
-    R2Point* pt = markerCoords1.at(i);
-    this->DrawBox(pt->X(), pt->Y(), true);
-  }
+  std::pair< R2Point*, R2Point* > p0 (new R2Point(0,0), markerCoords.at(0));
+  std::pair< R2Point*, R2Point* > p1 (new R2Point(Width(),0), markerCoords.at(1));
+  std::pair< R2Point*, R2Point* > p2 (new R2Point(0,Height()), markerCoords.at(2));
+  std::pair< R2Point*, R2Point* > p3 (new R2Point(Width(),Height()), markerCoords.at(3));
 
-  // create vector of pairs of marker coordinates
-  std::vector< std::pair< R2Point*, R2Point* > > cor;
-  cor.resize(4);
-  for (int i=0; i<markerCoords0.size(); i++) {
-    std::pair< R2Point*, R2Point* > p (markerCoords0.at(i), markerCoords1.at(i));
-    cor.at(i) = p;
-  }
+  cor.at(0) = p0;
+  cor.at(1) = p1;
+  cor.at(2) = p2;
+  cor.at(3) = p3;
 
+  // compute homography matrix mapping points from full image to points within markers
   double * H = BuildH(cor);
   for (int i = 0; i<9; i++) {
     printf("%lf\n", H[i]);
   }
-    
+
   /*
   std::vector< R2Point* > feats = GetBestFeatures();
   R2Point *x, *xP;
