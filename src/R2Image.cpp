@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <limits>
+#include <string>
 // #include <thread>
 #include <utility>
 #include <vector>
@@ -1362,20 +1363,29 @@ ProjectImage(R2Image * otherImage,
   
   // normalize each of the marker subimages
 
+  
+  std::string path = "~/AIT/vision/skeleton/frames3/frame_";
+  for (int i = 2; i < 59; i++) {
+    std::string p = path;
+    if (i < 10) p.append("0");
+    p.append(std::to_string(i));
+    printf("%s\n", p.c_str());
+  }
+  
   int SUBIMAGE_WIDTH = 41, SUBIMAGE_HEIGHT = 41;
   m1->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m2->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m3->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m4->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
 
+
   // locate 4 markers in original image
   std::vector< R2Point* > markerCoords = TrackMarkers(m1, m2, m3, m4);
   LabelPoints(markerCoords);
   ProjectPixels(otherImage, markerCoords);
-  
-  for (int i=0; i<58; i++) {
-    printf("%d\n",i);
-  }
+
+  // implement feature tracking for the rest of the images
+
   
   // determine location of markers in next image
   /*
