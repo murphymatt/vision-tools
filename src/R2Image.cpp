@@ -1366,17 +1366,7 @@ void R2Image::
 ProjectImage(R2Image * otherImage,
 	     R2Image * m1, R2Image * m2, R2Image * m3, R2Image * m4)
 {
-  /*
-   * 1. Locate 4 markers in original image
-   * 2. Create projection canvas from 4 markers
-   * ...
-   * 
-   * Compute homography matrix from 4 points of original image
-   * Apply homography matrix 
-   */
-  
   // normalize each of the marker subimages
-  
   int SUBIMAGE_WIDTH = 41, SUBIMAGE_HEIGHT = 41;
   m1->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m2->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
