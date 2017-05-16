@@ -967,10 +967,8 @@ interpolate(double w, double h)
   int yMax = (h > this->height) ? this->height : static_cast<int>(ceil(h));
 
   R2Pixel *top, *bottom;
-
   bottom = new R2Pixel((1 - xRatio) * Pixel(xMin, yMin)
 		       + xRatio * Pixel(xMax, yMin));
-    
   top = new R2Pixel((1 - xRatio) * Pixel(xMin, yMax)
 		    + xRatio * Pixel(xMax, yMax));
   
@@ -979,7 +977,7 @@ interpolate(double w, double h)
 
 
 void R2Image::
-MergePixels(int h_s, int h_f, int minX, int minY, double* H,
+MergePixels(int h_s, int h_f, double* H,
 	    R2Image * otherImage, R2Image * outputImage) {
 
   R2Point *t;
@@ -1164,7 +1162,7 @@ blendOtherImageHomography(R2Image * otherImage)
   double yCoords[3] = {tr->Y(), bl->Y(), br->Y()};
   double minX = tl->X(), minY = tl->Y();
   double maxX = tl->X(), maxY = tl->Y();
-  
+
   delete tl;
   delete tr;
   delete bl;
@@ -1182,8 +1180,7 @@ blendOtherImageHomography(R2Image * otherImage)
 
   // apply transformation to each pixel in the original image
   R2Image * tmp = new R2Image(nWidth, nHeight);
-  
-  MergePixels(0, tmp->Height(), ceil(minX), ceil(minY), H, otherImage, tmp);
+  MergePixels(0, tmp->Height(), H, otherImage, tmp);
   
   // multithreading variables
   // const int nThreads = 4;
@@ -1336,6 +1333,20 @@ ResizeImage(int w, int h)
   delete tmp;
 }
 
+
+void R2Image::
+LabelPoints(std::vector< R2Point* > points)
+{
+  R2Point* pt;
+  for (int i=0; i<points.size(); i++) {
+    pt = points.at(i);
+    DrawBox(pt->X(), pt->Y(), true);
+    printf("x = %f, y = %f\n", pt->X(), pt->Y());
+  }
+  delete pt;
+}
+
+
 void R2Image::
 ProjectImage(R2Image * otherImage,
 	     R2Image * m1, R2Image * m2, R2Image * m3, R2Image * m4)
@@ -1358,15 +1369,43 @@ ProjectImage(R2Image * otherImage,
   m4->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
 
   // locate 4 markers in original image
-  
   std::vector< R2Point* > markerCoords = TrackMarkers(m1, m2, m3, m4);
-  R2Point* pt;
+  LabelPoints(markerCoords);
+  ProjectPixels(otherImage, markerCoords);
+  
+  for (int i=0; i<58; i++) {
+    printf("%d\n",i);
+  }
+  
+  // determine location of markers in next image
+  /*
+  markerCoords = otherImage->TrackMarkerMovement(m1, m2, m3, m4, markerCoords);
   for (int i=0; i<markerCoords.size(); i++) {
     pt = markerCoords.at(i);
     DrawBox(pt->X(), pt->Y(), true);
     printf("x = %f, y = %f\n", pt->X(), pt->Y());
   }
+  */
+  
+  
+  /*
+  std::vector< R2Point* > feats = GetBestFeatures();
+  R2Point *x, *xP;
+  for (int i=0; i<feats.size(); i++) {
+    x = feats.at(i);
+    xP = applyTransformationMatrix(x, H);
+    line(x->X(), xP->X(), x->Y(), xP->Y(), 1, 0, 0);
+  }
+  */
+}
 
+
+// applies homogrphy transformation from otherImage onto original image
+// markerCoords is a 4-vector
+void R2Image::
+ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords)
+{
+  // compute correlation matrix and project pixels
   std::vector< std::pair< R2Point*, R2Point* > > cor;
   cor.resize(4);
 
@@ -1382,30 +1421,15 @@ ProjectImage(R2Image * otherImage,
 
   // compute homography matrix mapping points from full image to points within markers
   double * H = BuildH(cor);
-  for (int i = 0; i<9; i++) {
-    printf("%lf\n", H[i]);
-  }
 
 
-  // determine location of markers in next image
-  markerCoords = otherImage->TrackMarkerMovement(m1, m2, m3, m4, markerCoords);
-  for (int i=0; i<markerCoords.size(); i++) {
-    pt = markerCoords.at(i);
-    DrawBox(pt->X(), pt->Y(), true);
-    printf("x = %f, y = %f\n", pt->X(), pt->Y());
-  }
-
-  
-  
-  /*
-  std::vector< R2Point* > feats = GetBestFeatures();
-  R2Point *x, *xP;
-  for (int i=0; i<feats.size(); i++) {
-    x = feats.at(i);
-    xP = applyTransformationMatrix(x, H);
-    line(x->X(), xP->X(), x->Y(), xP->Y(), 1, 0, 0);
-  }
-  */
+  R2Point * p;
+  for (int y = 0; y < otherImage->Height(); y++) {
+    for (int x = 0; x < otherImage->Width(); x++) {
+      p = applyTransformationMatrix(new R2Point(x,y), H);
+      Pixel(p->X(), p->Y()) = otherImage->Pixel(x,y);
+    }
+  } 
 }
 
 

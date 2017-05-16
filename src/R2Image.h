@@ -80,7 +80,7 @@ class R2Image {
   double* BuildH(std::vector< std::pair< R2Point*, R2Point* > > cor);
   double* ComputeHomographyMatrix(R2Image *otherImage);
   double* InvertHomographyMatrix(double* H);
-  void MergePixels(int h_s, int h_f, int minX, int minY, double* H,
+  void MergePixels(int h_s, int h_f, double* H,
 		   R2Image * otherImage, R2Image * outputImage);
   double twoDeterminant(double m[4]);
   double threeDeterminant(double m[9]);
@@ -95,7 +95,9 @@ class R2Image {
     TrackMarkerMovement(R2Image * marker1, R2Image * marker2, R2Image * marker3,
 			R2Image * marker4, std::vector< R2Point* > markers);
   void ResizeImage(int w, int h);
-
+  void ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords);
+  void LabelPoints(std::vector< R2Point* > points);
+  
 
   // Linear filtering operations
   void SobelX();
