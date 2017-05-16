@@ -1296,7 +1296,7 @@ TrackMarkerMovement(R2Image * marker1, R2Image * marker2,
 		    R2Image * marker3, R2Image * marker4,
 		    std::vector< R2Point* > markers)
 {
-  int SEARCHWINDOW = 10;
+  int SEARCHWINDOW = 50;
   std::vector< R2Point* > ret;
   ret.resize(4);
 
@@ -1423,27 +1423,6 @@ ProjectImage(R2Image * otherImage,
       exit(-1);
     }
   }
-  
-  // determine location of markers in next image
-  /*
-  markerCoords = otherImage->TrackMarkerMovement(m1, m2, m3, m4, markerCoords);
-  for (int i=0; i<markerCoords.size(); i++) {
-    pt = markerCoords.at(i);
-    DrawBox(pt->X(), pt->Y(), true);
-    printf("x = %f, y = %f\n", pt->X(), pt->Y());
-  }
-  */
-  
-  
-  /*
-  std::vector< R2Point* > feats = GetBestFeatures();
-  R2Point *x, *xP;
-  for (int i=0; i<feats.size(); i++) {
-    x = feats.at(i);
-    xP = applyTransformationMatrix(x, H);
-    line(x->X(), xP->X(), x->Y(), xP->Y(), 1, 0, 0);
-  }
-  */
 }
 
 
@@ -1468,7 +1447,6 @@ ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords)
 
   // compute homography matrix mapping points from full image to points within markers
   double * H = BuildH(cor);
-
 
   R2Point * p;
   for (int y = 0; y < otherImage->Height(); y++) {
