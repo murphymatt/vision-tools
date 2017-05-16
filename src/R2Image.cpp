@@ -1292,7 +1292,8 @@ TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * 
 
 
 std::vector< R2Point* > R2Image::
-TrackMarkerMovement(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * marker4,
+TrackMarkerMovement(R2Image * marker1, R2Image * marker2,
+		    R2Image * marker3, R2Image * marker4,
 		    std::vector< R2Point* > markers)
 {
   int SEARCHWINDOW = 10;
@@ -1316,6 +1317,19 @@ TrackMarkerMovement(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2I
 		     markers.at(3)->Y() - SEARCHWINDOW / 2,
 		     SEARCHWINDOW, SEARCHWINDOW, true);
 
+  return ret;
+}
+
+
+R2Image* R2Image::
+GetSubImage(R2Point* coord, int w, int h)
+{
+  R2Image * ret = new R2Image(w,h);
+  for (int y = 0; y < h; y++) {
+    for (int x = 0; x < w; x++) {
+      ret->Pixel(x,y) = Pixel(coord->X() - w/2, coord->Y() - h/2);
+    }
+  }
   return ret;
 }
 
@@ -1362,15 +1376,6 @@ ProjectImage(R2Image * otherImage,
    */
   
   // normalize each of the marker subimages
-
-  
-  std::string path = "~/AIT/vision/skeleton/frames3/frame_";
-  for (int i = 2; i < 59; i++) {
-    std::string p = path;
-    if (i < 10) p.append("0");
-    p.append(std::to_string(i));
-    printf("%s\n", p.c_str());
-  }
   
   int SUBIMAGE_WIDTH = 41, SUBIMAGE_HEIGHT = 41;
   m1->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
@@ -1378,14 +1383,46 @@ ProjectImage(R2Image * otherImage,
   m3->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m4->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
 
-
   // locate 4 markers in original image
   std::vector< R2Point* > markerCoords = TrackMarkers(m1, m2, m3, m4);
   LabelPoints(markerCoords);
   ProjectPixels(otherImage, markerCoords);
 
   // implement feature tracking for the rest of the images
+  R2Image *frame;
+  std::string in_path = "~/AIT/vision/skeleton/frames3/frame_",
+    out_path = "~AIT/vision/skeleton/frames_out/frame_";
+  const char *fname_in, *fname_out;
+  for (int i = 2; i < 4; i++) {
+    std::string in = in_path, out = out_path;
+    if (i < 10) {
+      in.append("0");
+      out.append("0");
+    }
+    in.append(std::to_string(i));
+    in.append(".jpeg");
+    out.append(std::to_string(i));
+    out.append(".jpeg");
 
+    fname_in = in.c_str();
+    fname_out = out.c_str();
+    frame = new R2Image(fname_in);
+    
+    markerCoords = frame->TrackMarkerMovement(m1, m2, m3, m4, markerCoords);
+    m1 = frame->GetSubImage(markerCoords.at(0), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+    m2 = frame->GetSubImage(markerCoords.at(1), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+    m3 = frame->GetSubImage(markerCoords.at(2), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+    m4 = frame->GetSubImage(markerCoords.at(3), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+    frame->LabelPoints(markerCoords);
+
+    frame->ProjectPixels(otherImage, markerCoords);
+
+    // Write output image
+    if (!frame->Write(fname_out)) {
+      fprintf(stderr, "Unable to read image from %s\n", fname_out);
+      exit(-1);
+    }
+  }
   
   // determine location of markers in next image
   /*
@@ -2093,9 +2130,7 @@ ReadJPEG(const char *filename)
 #endif
 }
 
-
   
-
 int R2Image::
 WriteJPEG(const char *filename) const
 {
