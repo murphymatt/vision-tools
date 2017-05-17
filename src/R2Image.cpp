@@ -1264,18 +1264,19 @@ TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * 
   // 2 each marker, convolve over image to determine location
   //assumes markers are originally in their respective quadrants of the image
 
-  /*
-  markerCoords.at(0)=Convolve(marker1, 0, h, w, h, false);
-  markerCoords.at(1)=Convolve(marker2, w, h, w, h, false);
-  markerCoords.at(2)=Convolve(marker3, 0, 0, w, h, false);
-  markerCoords.at(3)=Convolve(marker4, w, 0, w, h, false);
-  */
 
+  markerCoords.at(0)=Convolve(marker1, 0, 0, w, h, false);
+  markerCoords.at(1)=Convolve(marker2, w, 0, w, h, false);
+  markerCoords.at(2)=Convolve(marker3, 0, h, w, h, false);
+  markerCoords.at(3)=Convolve(marker4, w, h, w, h, false);
+
+  /*
   markerCoords.at(0) = new R2Point(349, 959);
   markerCoords.at(1) = new R2Point(1461, 905);
   markerCoords.at(2) = new R2Point(372, 302);
   markerCoords.at(3) = new R2Point(1387, 140);
-  
+  */
+
   return markerCoords;
 }
 
@@ -1285,7 +1286,7 @@ TrackMarkerMovement(R2Image * marker1, R2Image * marker2,
 		    R2Image * marker3, R2Image * marker4,
 		    std::vector< R2Point* > markers)
 {
-  int SEARCHWINDOW = 50;
+  int SEARCHWINDOW = 10;
   std::vector< R2Point* > ret;
   ret.resize(4);
 
@@ -1357,7 +1358,7 @@ ProjectImage(R2Image * otherImage,
 	     R2Image * m1, R2Image * m2, R2Image * m3, R2Image * m4)
 {
   // normalize each of the marker subimages
-  int SUBIMAGE_WIDTH = 41, SUBIMAGE_HEIGHT = 41;
+  int SUBIMAGE_WIDTH = 32, SUBIMAGE_HEIGHT = 32;
   m1->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m2->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m3->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
@@ -1370,7 +1371,7 @@ ProjectImage(R2Image * otherImage,
   
   // implement feature tracking for the rest of the images
   R2Image *frame;
-  std::string in_path = "frames3/frame_",
+  std::string in_path = "frames4/frame_",
     out_path = "frames_out/frame_";
   for (int i = 2; i < 59; i++) {
     std::string in = in_path, out = out_path;
@@ -1413,15 +1414,15 @@ ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords)
   std::vector< std::pair< R2Point*, R2Point* > > cor;
   cor.resize(4);
 
-  std::pair< R2Point*, R2Point* > p0 (new R2Point(0,Height()), markerCoords.at(0));
-  std::pair< R2Point*, R2Point* > p1 (new R2Point(Width(),Height()), markerCoords.at(1));
-  std::pair< R2Point*, R2Point* > p2 (new R2Point(0,0), markerCoords.at(2));
-  std::pair< R2Point*, R2Point* > p3 (new R2Point(Width(),0), markerCoords.at(3));
+  std::pair< R2Point*, R2Point* > p0 (new R2Point(0,0), markerCoords.at(0));
+  std::pair< R2Point*, R2Point* > p1 (new R2Point(Width(),0), markerCoords.at(1));
+  std::pair< R2Point*, R2Point* > p2 (new R2Point(0,Height()), markerCoords.at(2));
+  std::pair< R2Point*, R2Point* > p3 (new R2Point(Width(),Height()), markerCoords.at(3));
 
-  cor.at(0) = p2;
-  cor.at(1) = p3;
-  cor.at(2) = p0;
-  cor.at(3) = p1;
+  cor.at(0) = p0;
+  cor.at(1) = p1;
+  cor.at(2) = p2;
+  cor.at(3) = p3;
   
   // compute homography matrix mapping points from full image to points within markers
   double * H = BuildH(cor);
