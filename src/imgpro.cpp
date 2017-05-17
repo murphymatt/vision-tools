@@ -240,13 +240,6 @@ main(int argc, char **argv)
       argv += 2, argc -= 2;
       image->MedianFilter(window);
     }
-    else if (!strcmp(*argv, "-mark")) {
-      CheckOption(*argv, argc, 2);
-      R2Image *other_image = new R2Image(argv[1]);
-      argv += 2, argc -= 2;
-      image->MarkSubimage(other_image);
-      delete other_image;
-    }
     else if (!strcmp(*argv, "-projectImage")) {
       CheckOption(*argv, argc, 2);
       R2Image * other_image = new R2Image(argv[1]);

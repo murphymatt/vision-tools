@@ -1228,7 +1228,6 @@ ReplaceRed(R2Image * otherImage)
 R2Point* R2Image::
 Convolve(R2Image * subImage, double x, double y, double dx, double dy, bool b)
 {
-  if (b) printf("x = %f, y = %f\n",x,y);
   int sW = subImage->Width(), sH = subImage->Height();
   int lower_x = fmax(x, sW/2), upper_x = fmin(x + dx, Width() - sW/2);
   int lower_y = fmax(y, sH/2), upper_y = fmin(y + dy, Height() - sH/2);
@@ -1236,9 +1235,6 @@ Convolve(R2Image * subImage, double x, double y, double dx, double dy, bool b)
   double fx=-1, fy=-1;
   double minDiff = std::numeric_limits<double>::infinity(), diff;
 
-  if (b) printf("lower_y = %d, upper_y = %d\n", lower_y, upper_y);
-  if (b) printf("lower_x = %d, upper_x = %d\n", lower_x, upper_x);
-  
   // iterate over a search window to determine the center location of the subimage
   for(int ly=lower_y; ly<upper_y; ly++) {
     for(int lx=lower_x; lx<upper_x; lx++) {
@@ -1254,15 +1250,6 @@ Convolve(R2Image * subImage, double x, double y, double dx, double dy, bool b)
   
   return new R2Point(fx,fy);
 }
-
-
-void R2Image::
-MarkSubimage(R2Image * subImage)
-{
-  R2Point * pt = Convolve(subImage, Width()/2 - 100, Height()/2 - 100, Width()/4, Height()/4, false);
-  this->DrawBox(pt->X(), pt->Y(), true);
-  delete pt;
-}  
 
 
 std::vector< R2Point* > R2Image::
@@ -1304,12 +1291,10 @@ TrackMarkerMovement(R2Image * marker1, R2Image * marker2,
 
   R2Point *m1 = markers.at(0), *m2 = markers.at(1), *m3 = markers.at(2), *m4 = markers.at(3);
 
-  printf("\n\nm1:   x = %f, y = %f\n", m1->X(), m1->Y());
-  
   ret.at(0)=Convolve(marker1,
 		     m1->X() - (SEARCHWINDOW / 2),
 		     m1->Y() - (SEARCHWINDOW / 2),
-		     SEARCHWINDOW, SEARCHWINDOW, true);
+		     SEARCHWINDOW, SEARCHWINDOW, false);
   ret.at(1)=Convolve(marker2,
 		     m2->X() - SEARCHWINDOW / 2,
 		     m2->Y() - SEARCHWINDOW / 2,
@@ -1328,9 +1313,8 @@ TrackMarkerMovement(R2Image * marker1, R2Image * marker2,
 
 
 R2Image* R2Image::
-GetSubImage(R2Point* coord, int w, int h)
+GetSubImage(R2Point* coord, double w, double h)
 {
-  printf("x = %f, y = %f\n", coord->X(), coord->Y());
   R2Image * ret = new R2Image(w,h);
   for (int y = 0; y < h; y++) {
     for (int x = 0; x < w; x++) {
@@ -1365,7 +1349,6 @@ LabelPoints(std::vector< R2Point* > points)
     DrawBox(pt->X(), pt->Y(), true);
     //printf("x = %f, y = %f\n", pt->X(), pt->Y());
   }
-  delete pt;
 }
 
 
@@ -1382,7 +1365,7 @@ ProjectImage(R2Image * otherImage,
   Write("frames_out/frame_01.jpeg\0");
   // locate 4 markers in original image
   std::vector< R2Point* > markerCoords = TrackMarkers(m1, m2, m3, m4);
-  LabelPoints(markerCoords);
+  //LabelPoints(markerCoords);
   ProjectPixels(otherImage, markerCoords);
   
   
@@ -1408,6 +1391,8 @@ ProjectImage(R2Image * otherImage,
     m2 = frame->GetSubImage(markerCoords.at(1), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
     m3 = frame->GetSubImage(markerCoords.at(2), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
     m4 = frame->GetSubImage(markerCoords.at(3), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+
+    // TODO: determine wtf is up with labelpoints method
     frame->LabelPoints(markerCoords);
 
     frame->ProjectPixels(otherImage, markerCoords);

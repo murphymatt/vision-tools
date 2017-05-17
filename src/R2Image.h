@@ -87,7 +87,6 @@ class R2Image {
   R2Pixel* interpolate(double width, double height);
   double redRatio(int x, int y);
   R2Point* Convolve(R2Image * subImage, double x, double y, double dx, double dy, bool b);
-  void MarkSubimage(R2Image * subImage);
   double CompareBlock(R2Image * subImage);
   std::vector< R2Point* >
     TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * marker4);
@@ -95,7 +94,7 @@ class R2Image {
     TrackMarkerMovement(R2Image * marker1, R2Image * marker2,
 			R2Image * marker3, R2Image * marker4,
 			std::vector< R2Point* > markers);
-  R2Image * GetSubImage(R2Point* coord, int w, int h);
+  R2Image * GetSubImage(R2Point* coord, double w, double h);
   void ResizeImage(int w, int h);
   void ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords);
   void LabelPoints(std::vector< R2Point* > points);
