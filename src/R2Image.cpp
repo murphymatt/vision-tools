@@ -1214,7 +1214,7 @@ greenRatio(double x, double y)
 
 
 R2Point* R2Image::
-Convolve(R2Image * subImage, double x, double y, double dx, double dy, bool b)
+Convolve(R2Image * subImage, double x, double y, double dx, double dy)
 {
   int sW = subImage->Width(), sH = subImage->Height();
   int lower_x = fmax(x, sW/2), upper_x = fmin(x + dx, Width() - sW/2);
@@ -1253,10 +1253,10 @@ TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * 
   //assumes markers are originally in their respective quadrants of the image
 
 
-  markerCoords.at(0)=Convolve(marker1, 0, 0, w, h, false);
-  markerCoords.at(1)=Convolve(marker2, w, 0, w, h, false);
-  markerCoords.at(2)=Convolve(marker3, 0, h, w, h, false);
-  markerCoords.at(3)=Convolve(marker4, w, h, w, h, false);
+  markerCoords.at(0)=Convolve(marker1, 0, 0, w, h);
+  markerCoords.at(1)=Convolve(marker2, w, 0, w, h);
+  markerCoords.at(2)=Convolve(marker3, 0, h, w, h);
+  markerCoords.at(3)=Convolve(marker4, w, h, w, h);
 
   /*
   markerCoords.at(0) = new R2Point(349, 959);
@@ -1283,19 +1283,19 @@ TrackMarkerMovement(R2Image * marker1, R2Image * marker2,
   ret.at(0)=Convolve(marker1,
 		     m1->X() - (SEARCHWINDOW / 2),
 		     m1->Y() - (SEARCHWINDOW / 2),
-		     SEARCHWINDOW, SEARCHWINDOW, false);
+		     SEARCHWINDOW, SEARCHWINDOW);
   ret.at(1)=Convolve(marker2,
 		     m2->X() - SEARCHWINDOW / 2,
 		     m2->Y() - SEARCHWINDOW / 2,
-		     SEARCHWINDOW, SEARCHWINDOW, false);
+		     SEARCHWINDOW, SEARCHWINDOW);
   ret.at(2)=Convolve(marker3,
 		     m3->X() - SEARCHWINDOW / 2,
 		     m3->Y() - SEARCHWINDOW / 2,
-		     SEARCHWINDOW, SEARCHWINDOW, false);
+		     SEARCHWINDOW, SEARCHWINDOW);
   ret.at(3)=Convolve(marker4,
 		     m4->X() - SEARCHWINDOW / 2,
 		     m4->Y() - SEARCHWINDOW / 2,
-		     SEARCHWINDOW, SEARCHWINDOW, true);
+		     SEARCHWINDOW, SEARCHWINDOW);
 
   return ret;
 }

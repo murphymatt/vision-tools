@@ -86,7 +86,7 @@ class R2Image {
   double threeDeterminant(double m[9]);
   R2Pixel* interpolate(double width, double height);
   double greenRatio(double x, double y);
-  R2Point* Convolve(R2Image * subImage, double x, double y, double dx, double dy, bool b);
+  R2Point* Convolve(R2Image * subImage, double x, double y, double dx, double dy);
   double CompareBlock(R2Image * subImage);
   std::vector< R2Point* >
     TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * marker4);
