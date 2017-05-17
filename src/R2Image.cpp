@@ -1235,15 +1235,16 @@ Convolve(R2Image * subImage, int x, int y, int dx, int dy, bool b)
   double fx=-1, fy=-1;
   double minDiff = std::numeric_limits<double>::infinity(), diff;
 
-  //printf("lower_y = %d, upper_y = %d\n", lower_y, upper_y);
-  //printf("lower_x = %d, upper_x = %d\n", lower_x, upper_x);
+  if (b) printf("lower_y = %d, upper_y = %d\n", lower_y, upper_y);
+  if (b) printf("lower_x = %d, upper_x = %d\n", lower_x, upper_x);
   
   // iterate over a search window to determine the center location of the subimage
   for(int ly=lower_y; ly<upper_y; ly++) {
     for(int lx=lower_x; lx<upper_x; lx++) {
       diff = SSD(lx, ly, subImage, sW/2, sH/2, sW/2, sH/2);
-      //if (b) printf("diff = %f\n", diff);
+
       if (diff < minDiff) {
+	if (b) printf("diff = %f\n", diff);
 	minDiff = diff;
 	fx = lx;
 	fy = ly;
@@ -1275,18 +1276,19 @@ TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * 
 
   // 2 each marker, convolve over image to determine location
   //assumes markers are originally in their respective quadrants of the image
-  markerCoords.at(0)=Convolve(marker1, 0, h, w, h, true);
-  markerCoords.at(1)=Convolve(marker2, w, h, w, h, false);
-  markerCoords.at(2)=Convolve(marker3, 0, 0, w, h, false);
-  markerCoords.at(3)=Convolve(marker4, w, 0, w, h, true);
 
   /*
-  markerCoords.at(0) = new R2Point(349, Height() - 121);
-  markerCoords.at(1) = new R2Point(1462, Height() - 185);
-  markerCoords.at(2) = new R2Point(371, Height() - 778);
-  markerCoords.at(3) = new R2Point(1388, Height() - 941);
+  markerCoords.at(0)=Convolve(marker1, 0, h, w, h, false);
+  markerCoords.at(1)=Convolve(marker2, w, h, w, h, false);
+  markerCoords.at(2)=Convolve(marker3, 0, 0, w, h, false);
+  markerCoords.at(3)=Convolve(marker4, w, 0, w, h, false);
   */
-    
+
+  markerCoords.at(0) = new R2Point(349, 959);
+  markerCoords.at(1) = new R2Point(1461, 905);
+  markerCoords.at(2) = new R2Point(372, 302);
+  markerCoords.at(3) = new R2Point(1387, 140);
+  
   return markerCoords;
 }
 
@@ -1299,7 +1301,7 @@ TrackMarkerMovement(R2Image * marker1, R2Image * marker2,
   int SEARCHWINDOW = 50;
   std::vector< R2Point* > ret;
   ret.resize(4);
-
+  
   ret.at(0)=Convolve(marker1,
 		     markers.at(0)->X() - SEARCHWINDOW / 2,
 		     markers.at(0)->Y() - SEARCHWINDOW / 2,
@@ -1324,6 +1326,7 @@ TrackMarkerMovement(R2Image * marker1, R2Image * marker2,
 R2Image* R2Image::
 GetSubImage(R2Point* coord, int w, int h)
 {
+  printf("x = %f, y = %f\n", coord->X(), coord->Y());
   R2Image * ret = new R2Image(w,h);
   for (int y = 0; y < h; y++) {
     for (int x = 0; x < w; x++) {
@@ -1356,7 +1359,7 @@ LabelPoints(std::vector< R2Point* > points)
   for (int i=0; i<points.size(); i++) {
     pt = points.at(i);
     DrawBox(pt->X(), pt->Y(), true);
-    printf("x = %f, y = %f\n", pt->X(), pt->Y());
+    //printf("x = %f, y = %f\n", pt->X(), pt->Y());
   }
   delete pt;
 }
@@ -1372,31 +1375,29 @@ ProjectImage(R2Image * otherImage,
   m2->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m3->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m4->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-
+  Write("frames_out/frame_01.jpeg\0");
   // locate 4 markers in original image
   std::vector< R2Point* > markerCoords = TrackMarkers(m1, m2, m3, m4);
   LabelPoints(markerCoords);
   ProjectPixels(otherImage, markerCoords);
-
+  
+  
   // implement feature tracking for the rest of the images
   R2Image *frame;
-  std::string in_path = "~/AIT/vision/skeleton/frames3/frame_",
-    out_path = "~AIT/vision/skeleton/frames_out/frame_";
-  const char *fname_in, *fname_out;
-  for (int i = 2; i < 4; i++) {
+  std::string in_path = "frames3/frame_",
+    out_path = "frames_out/frame_";
+  for (int i = 2; i < 59; i++) {
     std::string in = in_path, out = out_path;
     if (i < 10) {
       in.append("0");
       out.append("0");
     }
     in.append(std::to_string(i));
-    in.append(".jpeg");
+    in.append(".jpeg\0");
     out.append(std::to_string(i));
-    out.append(".jpeg");
+    out.append(".jpeg\0");
 
-    fname_in = in.c_str();
-    fname_out = out.c_str();
-    frame = new R2Image(fname_in);
+    frame = new R2Image(in.c_str());
     
     markerCoords = frame->TrackMarkerMovement(m1, m2, m3, m4, markerCoords);
     m1 = frame->GetSubImage(markerCoords.at(0), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
@@ -1408,8 +1409,8 @@ ProjectImage(R2Image * otherImage,
     frame->ProjectPixels(otherImage, markerCoords);
 
     // Write output image
-    if (!frame->Write(fname_out)) {
-      fprintf(stderr, "Unable to read image from %s\n", fname_out);
+    if (!frame->Write(out.c_str())) {
+      fprintf(stderr, "Unable to read image from %s\n", out.c_str());
       exit(-1);
     }
   }
@@ -1442,7 +1443,8 @@ ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords)
   for (int y = 0; y < otherImage->Height(); y++) {
     for (int x = 0; x < otherImage->Width(); x++) {
       p = applyTransformationMatrix(new R2Point(x,y), H);
-      Pixel(p->X(), p->Y()) = otherImage->Pixel(x,y);
+      if (p->X() >= 0 & p->X() < width && p->Y() >= 0 && p->Y() < height)
+	Pixel(p->X(), p->Y()) = otherImage->Pixel(x,y);
     }
   } 
 }
