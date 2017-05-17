@@ -1362,10 +1362,9 @@ ProjectImage(R2Image * otherImage,
   m2->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m3->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m4->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-  Write("frames_out/frame_01.jpeg\0");
   // locate 4 markers in original image
   std::vector< R2Point* > markerCoords = TrackMarkers(m1, m2, m3, m4);
-  //LabelPoints(markerCoords);
+  LabelPoints(markerCoords);
   ProjectPixels(otherImage, markerCoords);
   
   
@@ -1394,7 +1393,6 @@ ProjectImage(R2Image * otherImage,
 
     // TODO: determine wtf is up with labelpoints method
     frame->LabelPoints(markerCoords);
-
     frame->ProjectPixels(otherImage, markerCoords);
 
     // Write output image
@@ -1420,11 +1418,11 @@ ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords)
   std::pair< R2Point*, R2Point* > p2 (new R2Point(0,0), markerCoords.at(2));
   std::pair< R2Point*, R2Point* > p3 (new R2Point(Width(),0), markerCoords.at(3));
 
-  cor.at(0) = p0;
-  cor.at(1) = p1;
-  cor.at(2) = p2;
-  cor.at(3) = p3;
-
+  cor.at(0) = p2;
+  cor.at(1) = p3;
+  cor.at(2) = p0;
+  cor.at(3) = p1;
+  
   // compute homography matrix mapping points from full image to points within markers
   double * H = BuildH(cor);
 
