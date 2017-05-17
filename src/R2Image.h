@@ -85,7 +85,7 @@ class R2Image {
   double twoDeterminant(double m[4]);
   double threeDeterminant(double m[9]);
   R2Pixel* interpolate(double width, double height);
-  double redRatio(int x, int y);
+  double greenRatio(double x, double y);
   R2Point* Convolve(R2Image * subImage, double x, double y, double dx, double dy, bool b);
   double CompareBlock(R2Image * subImage);
   std::vector< R2Point* >
@@ -120,7 +120,6 @@ class R2Image {
   // further operations
   void blendOtherImageTranslated(R2Image * otherImage);
   void blendOtherImageHomography(R2Image * otherImage);
-  void ReplaceRed(R2Image * otherImage);
   void ProjectImage(R2Image * otherImage,
 		    R2Image * m1, R2Image * m2, R2Image * m3, R2Image * m4);
 

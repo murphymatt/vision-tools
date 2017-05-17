@@ -1206,22 +1206,10 @@ blendOtherImageHomography(R2Image * otherImage)
 
 
 double R2Image::
-redRatio(int x, int y)
+greenRatio(double x, double y)
 {
   R2Pixel p = Pixel(x,y);
-  return p.Red() / (p.Red() + p.Green() + p.Blue());
-}
-    
-
-void R2Image::
-ReplaceRed(R2Image * otherImage)
-{
-  for(int h=0; h<height; h++) {
-    for(int w=0; w<width; w++) {
-      if (redRatio(w,h) > 0.8)
-	SetPixel(w,h,otherImage->Pixel(w,h));
-    }
-  }
+  return p.Green() / (p.Red() + p.Green() + p.Blue());
 }
 
 
@@ -1373,7 +1361,7 @@ ProjectImage(R2Image * otherImage,
   R2Image *frame;
   std::string in_path = "frames4/frame_",
     out_path = "frames_out/frame_";
-  for (int i = 2; i < 59; i++) {
+  for (int i = 2; i < 40; i++) {
     std::string in = in_path, out = out_path;
     if (i < 10) {
       in.append("0");
@@ -1431,8 +1419,10 @@ ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords)
   for (int y = 0; y < otherImage->Height(); y++) {
     for (int x = 0; x < otherImage->Width(); x++) {
       p = applyTransformationMatrix(new R2Point(x,y), H);
-      if (p->X() >= 0 & p->X() < width && p->Y() >= 0 && p->Y() < height)
+      if (p->X() >= 0 & p->X() < width && p->Y() >= 0 && p->Y() < height &&
+	  greenRatio(p->X(), p->Y()) > 0.35) {
 	Pixel(p->X(), p->Y()) = otherImage->Pixel(x,y);
+      }
     }
   } 
 }
