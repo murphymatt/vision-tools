@@ -86,7 +86,7 @@ class R2Image {
   double threeDeterminant(double m[9]);
   R2Pixel* interpolate(double width, double height);
   double redRatio(int x, int y);
-  R2Point* Convolve(R2Image * subImage, int x, int y, int dx, int dy, bool b);
+  R2Point* Convolve(R2Image * subImage, double x, double y, double dx, double dy, bool b);
   void MarkSubimage(R2Image * subImage);
   double CompareBlock(R2Image * subImage);
   std::vector< R2Point* >

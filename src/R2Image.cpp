@@ -1226,8 +1226,9 @@ ReplaceRed(R2Image * otherImage)
 
 
 R2Point* R2Image::
-Convolve(R2Image * subImage, int x, int y, int dx, int dy, bool b)
+Convolve(R2Image * subImage, double x, double y, double dx, double dy, bool b)
 {
+  if (b) printf("x = %f, y = %f\n",x,y);
   int sW = subImage->Width(), sH = subImage->Height();
   int lower_x = fmax(x, sW/2), upper_x = fmin(x + dx, Width() - sW/2);
   int lower_y = fmax(y, sH/2), upper_y = fmin(y + dy, Height() - sH/2);
@@ -1244,7 +1245,6 @@ Convolve(R2Image * subImage, int x, int y, int dx, int dy, bool b)
       diff = SSD(lx, ly, subImage, sW/2, sH/2, sW/2, sH/2);
 
       if (diff < minDiff) {
-	if (b) printf("diff = %f\n", diff);
 	minDiff = diff;
 	fx = lx;
 	fy = ly;
@@ -1301,22 +1301,26 @@ TrackMarkerMovement(R2Image * marker1, R2Image * marker2,
   int SEARCHWINDOW = 50;
   std::vector< R2Point* > ret;
   ret.resize(4);
+
+  R2Point *m1 = markers.at(0), *m2 = markers.at(1), *m3 = markers.at(2), *m4 = markers.at(3);
+
+  printf("\n\nm1:   x = %f, y = %f\n", m1->X(), m1->Y());
   
   ret.at(0)=Convolve(marker1,
-		     markers.at(0)->X() - SEARCHWINDOW / 2,
-		     markers.at(0)->Y() - SEARCHWINDOW / 2,
+		     m1->X() - (SEARCHWINDOW / 2),
+		     m1->Y() - (SEARCHWINDOW / 2),
 		     SEARCHWINDOW, SEARCHWINDOW, true);
   ret.at(1)=Convolve(marker2,
-		     markers.at(1)->X() - SEARCHWINDOW / 2,
-		     markers.at(1)->Y() - SEARCHWINDOW / 2,
+		     m2->X() - SEARCHWINDOW / 2,
+		     m2->Y() - SEARCHWINDOW / 2,
 		     SEARCHWINDOW, SEARCHWINDOW, false);
   ret.at(2)=Convolve(marker3,
-		     markers.at(2)->X() - SEARCHWINDOW / 2,
-		     markers.at(2)->Y() - SEARCHWINDOW / 2,
+		     m3->X() - SEARCHWINDOW / 2,
+		     m3->Y() - SEARCHWINDOW / 2,
 		     SEARCHWINDOW, SEARCHWINDOW, false);
   ret.at(3)=Convolve(marker4,
-		     markers.at(3)->X() - SEARCHWINDOW / 2,
-		     markers.at(3)->Y() - SEARCHWINDOW / 2,
+		     m4->X() - SEARCHWINDOW / 2,
+		     m4->Y() - SEARCHWINDOW / 2,
 		     SEARCHWINDOW, SEARCHWINDOW, true);
 
   return ret;
