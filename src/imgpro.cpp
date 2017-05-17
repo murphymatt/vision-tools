@@ -247,10 +247,10 @@ main(int argc, char **argv)
 
       // load marker images
       R2Image
-	*marker_1 = new R2Image("markers2/marker_1.jpeg"),
-	*marker_2 = new R2Image("markers2/marker_2.jpeg"),
-	*marker_3 = new R2Image("markers2/marker_3.jpeg"),
-	*marker_4 = new R2Image("markers2/marker_4.jpeg");
+	*marker_1 = new R2Image("markers3/marker_1.jpeg"),
+	*marker_2 = new R2Image("markers3/marker_2.jpeg"),
+	*marker_3 = new R2Image("markers3/marker_3.jpeg"),
+	*marker_4 = new R2Image("markers3/marker_4.jpeg");
 
       image->ProjectImage(other_image, marker_1, marker_2, marker_3, marker_4);
       delete other_image;
