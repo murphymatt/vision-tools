@@ -1258,17 +1258,18 @@ TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * 
   // 2 each marker, convolve over image to determine location
   //assumes markers are originally in their respective quadrants of the image
 
+  /*
   markerCoords.at(0)=Convolve(marker1, w, h, w, h, true);
   markerCoords.at(1)=Convolve(marker2, 3*w, h, w, h, false);
   markerCoords.at(2)=Convolve(marker3, w, 3*h, w, h, false);
   markerCoords.at(3)=Convolve(marker4, 3*w, 3*h, w, h, false);
+  */
 
-  /*
   markerCoords.at(0) = new R2Point(48, 129);
   markerCoords.at(1) = new R2Point(440, 130);
   markerCoords.at(2) = new R2Point(40, 285);
   markerCoords.at(3) = new R2Point(443, 286);
-  */
+
  
   return markerCoords;
 }
@@ -1415,11 +1416,10 @@ ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords)
   for (int y = 0; y < otherImage->Height(); y++) {
     for (int x = 0; x < otherImage->Width(); x++) {
       p = applyTransformationMatrix(new R2Point(x,y), H);
-      if (p->X() >= 0 & p->X() < width && p->Y() >= 0 && p->Y() < height)// &&
-	//greenRatio(p->X(), p->Y()) > 0.35) {
-	{
-	  Pixel(p->X(), p->Y()) = otherImage->Pixel(x,y);
-	}
+      if (p->X() >= 0 & p->X() < width && p->Y() >= 0 && p->Y() < height &&
+	greenRatio(p->X(), p->Y()) > 0.35) {
+	Pixel(p->X(), p->Y()) = otherImage->Pixel(x,y);
+      }
     }
   } 
 }
