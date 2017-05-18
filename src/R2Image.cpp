@@ -1339,12 +1339,14 @@ ProjectImage(R2Image * otherImage,
 {
   // normalize each of the marker subimages
   int SUBIMAGE_WIDTH = 45, SUBIMAGE_HEIGHT = 45;
+
   /*
   m1->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m2->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m3->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m4->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   */
+
   // locate 4 markers in original image
   std::vector< R2Point* > markerCoords = TrackMarkers(m1, m2, m3, m4);
   LabelPoints(markerCoords);
@@ -1370,13 +1372,17 @@ ProjectImage(R2Image * otherImage,
     markerCoords = frame->TrackMarkerMovement(m1, m2, m3, m4, markerCoords);
 
     if (i % 10 == 0) {
-      m1 = frame->GetSubImage(markerCoords.at(0), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-      m2 = frame->GetSubImage(markerCoords.at(1), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-      m3 = frame->GetSubImage(markerCoords.at(2), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-      m4 = frame->GetSubImage(markerCoords.at(3), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+      m1 = frame->GetSubImage(markerCoords.at(0),
+			      SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+      m2 = frame->GetSubImage(markerCoords.at(1),
+			      SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+      m3 = frame->GetSubImage(markerCoords.at(2),
+			      SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+      m4 = frame->GetSubImage(markerCoords.at(3),
+			      SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
     }
     
-    frame->LabelPoints(markerCoords);
+    //frame->LabelPoints(markerCoords);
     frame->ProjectPixels(otherImage, markerCoords);
 
     // Write output image
@@ -1397,10 +1403,14 @@ ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords)
   std::vector< std::pair< R2Point*, R2Point* > > cor;
   cor.resize(4);
 
-  std::pair< R2Point*, R2Point* > p0 (new R2Point(0,0), markerCoords.at(0));
-  std::pair< R2Point*, R2Point* > p1 (new R2Point(Width(),0), markerCoords.at(1));
-  std::pair< R2Point*, R2Point* > p2 (new R2Point(0,Height()), markerCoords.at(2));
-  std::pair< R2Point*, R2Point* > p3 (new R2Point(Width(),Height()), markerCoords.at(3));
+  std::pair< R2Point*, R2Point* > p0
+    (new R2Point(0,0), markerCoords.at(0));
+  std::pair< R2Point*, R2Point* > p1
+    (new R2Point(Width(),0), markerCoords.at(1));
+  std::pair< R2Point*, R2Point* > p2
+    (new R2Point(0,Height()), markerCoords.at(2));
+  std::pair< R2Point*, R2Point* > p3
+    (new R2Point(Width(),Height()), markerCoords.at(3));
 
   cor.at(0) = p0;
   cor.at(1) = p1;
@@ -1414,8 +1424,9 @@ ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords)
   for (int y = 0; y < otherImage->Height(); y++) {
     for (int x = 0; x < otherImage->Width(); x++) {
       p = applyTransformationMatrix(new R2Point(x,y), H);
-      if (p->X() >= 0 && p->X() < width && p->Y() >= 0 && p->Y() < height &&
-	greenRatio(p->X(), p->Y()) > 0.35) {
+      if (p->X() >= 0 && p->X() < width &&
+	  p->Y() >= 0 && p->Y() < height &&
+	  greenRatio(p->X(), p->Y()) > 0.35) {
 	Pixel(p->X(), p->Y()) = otherImage->Pixel(x,y);
       }
     }
