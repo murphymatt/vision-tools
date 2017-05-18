@@ -1216,9 +1216,11 @@ greenRatio(double x, double y)
 R2Point* R2Image::
 Convolve(R2Image * subImage, double x, double y, double dx, double dy, bool t)
 {
+  //if(t) printf("x = %f, y = %f\n", x, y);
+
   int sW = subImage->Width(), sH = subImage->Height();
-  int lower_x = fmax(x, sW/2), upper_x = fmin(x + dx, Width() - sW/2);
-  int lower_y = fmax(y, sH/2), upper_y = fmin(y + dy, Height() - sH/2);
+  int lower_x = fmax(x-dx, sW/2), upper_x = fmin(x + dx, Width() - sW/2);
+  int lower_y = fmax(y-dy, sH/2), upper_y = fmin(y + dy, Height() - sH/2);
 
   double fx=-1, fy=-1;
   double minDiff = std::numeric_limits<double>::infinity(), diff;
@@ -1226,15 +1228,18 @@ Convolve(R2Image * subImage, double x, double y, double dx, double dy, bool t)
   // iterate over a search window to determine the center location of the subimage
   for(int ly=lower_y; ly<upper_y; ly++) {
     for(int lx=lower_x; lx<upper_x; lx++) {
+      if (t) printf("lx = %d, ly = %d\n", lx, ly);
       diff = SSD(lx, ly, subImage, sW/2, sH/2, sW/2, sH/2);
-      if (t) printf("diff = %f\n", diff);
       if (diff < minDiff) {
 	minDiff = diff;
 	fx = lx;
 	fy = ly;
       }
+      if (t) printf("diff = %f\n", diff);
     }
   }
+
+  if (t) printf("upper_x = %d, upper_y = %d\n", upper_x, upper_y);
 
   if (fx < 0 || fy < 0) return new R2Point(x,y);
   return new R2Point(fx,fy);
@@ -1248,24 +1253,23 @@ TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * 
   std::vector< R2Point* > markerCoords;
   markerCoords.resize(4);
 
-  int w = Width()/2, h = Height()/2;
+  int w = Width()/4, h = Height()/4;
 
   // 2 each marker, convolve over image to determine location
   //assumes markers are originally in their respective quadrants of the image
 
-
-  markerCoords.at(0)=Convolve(marker1, 0, 0, w, h, true);
-  markerCoords.at(1)=Convolve(marker2, w, 0, w, h, false);
-  markerCoords.at(2)=Convolve(marker3, 0, h, w, h, false);
-  markerCoords.at(3)=Convolve(marker4, w, h, w, h, false);
+  markerCoords.at(0)=Convolve(marker1, w, h, w, h, true);
+  markerCoords.at(1)=Convolve(marker2, 3*w, h, w, h, false);
+  markerCoords.at(2)=Convolve(marker3, w, 3*h, w, h, false);
+  markerCoords.at(3)=Convolve(marker4, 3*w, 3*h, w, h, false);
 
   /*
-  markerCoords.at(0) = new R2Point(349, 959);
-  markerCoords.at(1) = new R2Point(1461, 905);
-  markerCoords.at(2) = new R2Point(372, 302);
-  markerCoords.at(3) = new R2Point(1387, 140);
+  markerCoords.at(0) = new R2Point(48, 129);
+  markerCoords.at(1) = new R2Point(440, 130);
+  markerCoords.at(2) = new R2Point(40, 285);
+  markerCoords.at(3) = new R2Point(443, 286);
   */
-
+ 
   return markerCoords;
 }
 
@@ -1283,23 +1287,10 @@ TrackMarkerMovement(R2Image * marker1, R2Image * marker2,
 
   printf("m1 x = %f, y = %f\n", m1->X(), m1->Y());
   
-  ret.at(0)=Convolve(marker1,
-		     m1->X() - (SEARCHWINDOW / 2),
-		     m1->Y() - (SEARCHWINDOW / 2),
-		     SEARCHWINDOW, SEARCHWINDOW,
-		     true);
-  ret.at(1)=Convolve(marker2,
-		     m2->X() - SEARCHWINDOW / 2,
-		     m2->Y() - SEARCHWINDOW / 2,
-		     SEARCHWINDOW, SEARCHWINDOW, false);
-  ret.at(2)=Convolve(marker3,
-		     m3->X() - SEARCHWINDOW / 2,
-		     m3->Y() - SEARCHWINDOW / 2,
-		     SEARCHWINDOW, SEARCHWINDOW, false);
-  ret.at(3)=Convolve(marker4,
-		     m4->X() - SEARCHWINDOW / 2,
-		     m4->Y() - SEARCHWINDOW / 2,
-		     SEARCHWINDOW, SEARCHWINDOW, false);
+  ret.at(0)=Convolve(marker1, m1->X(), m1->Y(), SEARCHWINDOW, SEARCHWINDOW, true);
+  ret.at(1)=Convolve(marker2, m2->X(), m2->Y(), SEARCHWINDOW, SEARCHWINDOW, false);
+  ret.at(2)=Convolve(marker3, m3->X(), m3->Y(), SEARCHWINDOW, SEARCHWINDOW, false);
+  ret.at(3)=Convolve(marker4, m4->X(), m4->Y(), SEARCHWINDOW, SEARCHWINDOW, false);
 
   return ret;
 }
@@ -1311,7 +1302,7 @@ GetSubImage(R2Point* coord, double w, double h)
   R2Image * ret = new R2Image(w,h);
   for (int y = 0; y < h; y++) {
     for (int x = 0; x < w; x++) {
-      ret->Pixel(x,y) = Pixel(coord->X() - w/2, coord->Y() - h/2);
+      ret->Pixel(x,y) = Pixel(coord->X() - w/2 + x, coord->Y() - h/2 + y);
     }
   }
   return ret;
@@ -1424,10 +1415,11 @@ ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords)
   for (int y = 0; y < otherImage->Height(); y++) {
     for (int x = 0; x < otherImage->Width(); x++) {
       p = applyTransformationMatrix(new R2Point(x,y), H);
-      if (p->X() >= 0 & p->X() < width && p->Y() >= 0 && p->Y() < height &&
-	  greenRatio(p->X(), p->Y()) > 0.35) {
-	Pixel(p->X(), p->Y()) = otherImage->Pixel(x,y);
-      }
+      if (p->X() >= 0 & p->X() < width && p->Y() >= 0 && p->Y() < height)// &&
+	//greenRatio(p->X(), p->Y()) > 0.35) {
+	{
+	  Pixel(p->X(), p->Y()) = otherImage->Pixel(x,y);
+	}
     }
   } 
 }
