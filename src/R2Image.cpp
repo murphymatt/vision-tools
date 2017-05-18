@@ -796,7 +796,6 @@ line(int x0, int x1, int y0, int y1, float r, float g, float b)
 double R2Image::
 SSD(double x1, double y1, R2Image * otherImage, double x2, double y2, double dx, double dy) 
 {
-  int x1c, y1c, x2c, y2c;
   double sum = 0.;
   for (int i=-1*dx; i<=dx; i++) {
     for (int j=-1*dy; j<=dy; j++) {
