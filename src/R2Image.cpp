@@ -1235,7 +1235,8 @@ Convolve(R2Image * subImage, double x, double y, double dx, double dy, bool t)
       }
     }
   }
-  
+
+  if (fx < 0 || fy < 0) return new R2Point(x,y);
   return new R2Point(fx,fy);
 }
 
