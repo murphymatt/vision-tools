@@ -1,4 +1,4 @@
-b// Include file for image class
+// Include file for image class
 #ifndef R2_IMAGE_INCLUDED
 #define R2_IMAGE_INCLUDED
 

@@ -1366,17 +1366,12 @@ ProjectImage(R2Image * otherImage,
 
     markerCoords = frame->TrackMarkerMovement(m1, m2, m3, m4, markerCoords);
 
-    // update markers every 10 frames
-    if (i % 10 == 0) {
-      m1 = frame->GetSubImage(markerCoords.at(0), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-      m2 = frame->GetSubImage(markerCoords.at(1), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-      m3 = frame->GetSubImage(markerCoords.at(2), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-      m4 = frame->GetSubImage(markerCoords.at(3), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-    }
+    m1 = frame->GetSubImage(markerCoords.at(0), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+    m2 = frame->GetSubImage(markerCoords.at(1), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+    m3 = frame->GetSubImage(markerCoords.at(2), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+    m4 = frame->GetSubImage(markerCoords.at(3), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
 
-    // TODO: determine wtf is up with labelpoints method
     frame->LabelPoints(markerCoords);
-
     frame->ProjectPixels(otherImage, markerCoords);
 
     // Write output image
