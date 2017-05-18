@@ -796,14 +796,15 @@ line(int x0, int x1, int y0, int y1, float r, float g, float b)
 double R2Image::
 SSD(double x1, double y1, R2Image * otherImage, double x2, double y2, double dx, double dy) 
 {
+  int x1c, y1c, x2c, y2c;
   double sum = 0.;
   for (int i=-1*dx; i<=dx; i++) {
     for (int j=-1*dy; j<=dy; j++) {
       sum +=
-	(getPixelMagnitude(x1+i,y1+j) - otherImage->getPixelMagnitude(x2+i,y2+j)) *
-	(getPixelMagnitude(x1+i,y1+j) - otherImage->getPixelMagnitude(x2+i,y2+j));
+        pow(getPixelMagnitude(x1+i,y1+j) - otherImage->getPixelMagnitude(x2+i,y2+j), 2);
     }
   }
+  
   return sum;
 }
 
@@ -1214,7 +1215,7 @@ greenRatio(double x, double y)
 
 
 R2Point* R2Image::
-Convolve(R2Image * subImage, double x, double y, double dx, double dy)
+Convolve(R2Image * subImage, double x, double y, double dx, double dy, bool t)
 {
   int sW = subImage->Width(), sH = subImage->Height();
   int lower_x = fmax(x, sW/2), upper_x = fmin(x + dx, Width() - sW/2);
@@ -1227,7 +1228,7 @@ Convolve(R2Image * subImage, double x, double y, double dx, double dy)
   for(int ly=lower_y; ly<upper_y; ly++) {
     for(int lx=lower_x; lx<upper_x; lx++) {
       diff = SSD(lx, ly, subImage, sW/2, sH/2, sW/2, sH/2);
-
+      if (t) printf("diff = %f\n", diff);
       if (diff < minDiff) {
 	minDiff = diff;
 	fx = lx;
@@ -1253,10 +1254,10 @@ TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * 
   //assumes markers are originally in their respective quadrants of the image
 
 
-  markerCoords.at(0)=Convolve(marker1, 0, 0, w, h);
-  markerCoords.at(1)=Convolve(marker2, w, 0, w, h);
-  markerCoords.at(2)=Convolve(marker3, 0, h, w, h);
-  markerCoords.at(3)=Convolve(marker4, w, h, w, h);
+  markerCoords.at(0)=Convolve(marker1, 0, 0, w, h, true);
+  markerCoords.at(1)=Convolve(marker2, w, 0, w, h, false);
+  markerCoords.at(2)=Convolve(marker3, 0, h, w, h, false);
+  markerCoords.at(3)=Convolve(marker4, w, h, w, h, false);
 
   /*
   markerCoords.at(0) = new R2Point(349, 959);
@@ -1280,22 +1281,25 @@ TrackMarkerMovement(R2Image * marker1, R2Image * marker2,
 
   R2Point *m1 = markers.at(0), *m2 = markers.at(1), *m3 = markers.at(2), *m4 = markers.at(3);
 
+  printf("m1 x = %f, y = %f\n", m1->X(), m1->Y());
+  
   ret.at(0)=Convolve(marker1,
 		     m1->X() - (SEARCHWINDOW / 2),
 		     m1->Y() - (SEARCHWINDOW / 2),
-		     SEARCHWINDOW, SEARCHWINDOW);
+		     SEARCHWINDOW, SEARCHWINDOW,
+		     true);
   ret.at(1)=Convolve(marker2,
 		     m2->X() - SEARCHWINDOW / 2,
 		     m2->Y() - SEARCHWINDOW / 2,
-		     SEARCHWINDOW, SEARCHWINDOW);
+		     SEARCHWINDOW, SEARCHWINDOW, false);
   ret.at(2)=Convolve(marker3,
 		     m3->X() - SEARCHWINDOW / 2,
 		     m3->Y() - SEARCHWINDOW / 2,
-		     SEARCHWINDOW, SEARCHWINDOW);
+		     SEARCHWINDOW, SEARCHWINDOW, false);
   ret.at(3)=Convolve(marker4,
 		     m4->X() - SEARCHWINDOW / 2,
 		     m4->Y() - SEARCHWINDOW / 2,
-		     SEARCHWINDOW, SEARCHWINDOW);
+		     SEARCHWINDOW, SEARCHWINDOW, false);
 
   return ret;
 }
@@ -1335,8 +1339,7 @@ LabelPoints(std::vector< R2Point* > points)
   R2Point* pt;
   for (int i=0; i<points.size(); i++) {
     pt = points.at(i);
-    DrawBox(pt->X(), pt->Y(), true);
-    //printf("x = %f, y = %f\n", pt->X(), pt->Y());
+    DrawBox(pt->X(), pt->Y(), false);
   }
 }
 
@@ -1373,8 +1376,9 @@ ProjectImage(R2Image * otherImage,
     out.append(".jpeg\0");
 
     frame = new R2Image(in.c_str());
-    
+
     markerCoords = frame->TrackMarkerMovement(m1, m2, m3, m4, markerCoords);
+
     m1 = frame->GetSubImage(markerCoords.at(0), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
     m2 = frame->GetSubImage(markerCoords.at(1), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
     m3 = frame->GetSubImage(markerCoords.at(2), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
@@ -1382,6 +1386,7 @@ ProjectImage(R2Image * otherImage,
 
     // TODO: determine wtf is up with labelpoints method
     frame->LabelPoints(markerCoords);
+
     frame->ProjectPixels(otherImage, markerCoords);
 
     // Write output image
