@@ -800,7 +800,8 @@ SSD(double x1, double y1, R2Image * otherImage, double x2, double y2, double dx,
   for (int i=-1*dx; i<=dx; i++) {
     for (int j=-1*dy; j<=dy; j++) {
       sum +=
-        pow(getPixelMagnitude(x1+i,y1+j) - otherImage->getPixelMagnitude(x2+i,y2+j), 2);
+	pow(Pixel(x1+i,y1+j).Luminance() - otherImage->Pixel(x2+i,y2+j).Luminance(), 2);
+	//        pow(getPixelMagnitude(x1+i,y1+j) - otherImage->getPixelMagnitude(x2+i,y2+j), 2);
     }
   }
   
@@ -1230,6 +1231,7 @@ Convolve(R2Image * subImage, double x, double y, double dx, double dy)
     for(int lx=lower_x; lx<upper_x; lx++) {
       diff = SSD(lx, ly, subImage, sW/2, sH/2, sW/2, sH/2);
       if (diff < minDiff) {
+	//if (t) printf("diff = %f\n", diff);
 	minDiff = diff;
 	fx = lx;
 	fy = ly;
@@ -1336,16 +1338,17 @@ ProjectImage(R2Image * otherImage,
 	     R2Image * m1, R2Image * m2, R2Image * m3, R2Image * m4)
 {
   // normalize each of the marker subimages
-  int SUBIMAGE_WIDTH = 32, SUBIMAGE_HEIGHT = 32;
+  int SUBIMAGE_WIDTH = 45, SUBIMAGE_HEIGHT = 45;
+  /*
   m1->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m2->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m3->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m4->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+  */
   // locate 4 markers in original image
   std::vector< R2Point* > markerCoords = TrackMarkers(m1, m2, m3, m4);
   LabelPoints(markerCoords);
   ProjectPixels(otherImage, markerCoords);
-  
   
   // implement feature tracking for the rest of the images
   R2Image *frame;
@@ -1366,11 +1369,13 @@ ProjectImage(R2Image * otherImage,
 
     markerCoords = frame->TrackMarkerMovement(m1, m2, m3, m4, markerCoords);
 
-    m1 = frame->GetSubImage(markerCoords.at(0), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-    m2 = frame->GetSubImage(markerCoords.at(1), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-    m3 = frame->GetSubImage(markerCoords.at(2), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-    m4 = frame->GetSubImage(markerCoords.at(3), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-
+    if (i % 10 == 0) {
+      m1 = frame->GetSubImage(markerCoords.at(0), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+      m2 = frame->GetSubImage(markerCoords.at(1), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+      m3 = frame->GetSubImage(markerCoords.at(2), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+      m4 = frame->GetSubImage(markerCoords.at(3), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+    }
+    
     frame->LabelPoints(markerCoords);
     frame->ProjectPixels(otherImage, markerCoords);
 
@@ -1409,7 +1414,7 @@ ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords)
   for (int y = 0; y < otherImage->Height(); y++) {
     for (int x = 0; x < otherImage->Width(); x++) {
       p = applyTransformationMatrix(new R2Point(x,y), H);
-      if (p->X() >= 0 & p->X() < width && p->Y() >= 0 && p->Y() < height &&
+      if (p->X() >= 0 && p->X() < width && p->Y() >= 0 && p->Y() < height &&
 	greenRatio(p->X(), p->Y()) > 0.35) {
 	Pixel(p->X(), p->Y()) = otherImage->Pixel(x,y);
       }
