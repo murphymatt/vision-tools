@@ -1214,7 +1214,7 @@ greenRatio(double x, double y)
 
 
 R2Point* R2Image::
-Convolve(R2Image * subImage, double x, double y, double dx, double dy, bool t)
+Convolve(R2Image * subImage, double x, double y, double dx, double dy)
 {
   //if(t) printf("x = %f, y = %f\n", x, y);
 
@@ -1228,18 +1228,14 @@ Convolve(R2Image * subImage, double x, double y, double dx, double dy, bool t)
   // iterate over a search window to determine the center location of the subimage
   for(int ly=lower_y; ly<upper_y; ly++) {
     for(int lx=lower_x; lx<upper_x; lx++) {
-      if (t) printf("lx = %d, ly = %d\n", lx, ly);
       diff = SSD(lx, ly, subImage, sW/2, sH/2, sW/2, sH/2);
       if (diff < minDiff) {
 	minDiff = diff;
 	fx = lx;
 	fy = ly;
       }
-      if (t) printf("diff = %f\n", diff);
     }
   }
-
-  if (t) printf("upper_x = %d, upper_y = %d\n", upper_x, upper_y);
 
   if (fx < 0 || fy < 0) return new R2Point(x,y);
   return new R2Point(fx,fy);
@@ -1259,17 +1255,16 @@ TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * 
   //assumes markers are originally in their respective quadrants of the image
 
   /*
-  markerCoords.at(0)=Convolve(marker1, w, h, w, h, true);
-  markerCoords.at(1)=Convolve(marker2, 3*w, h, w, h, false);
-  markerCoords.at(2)=Convolve(marker3, w, 3*h, w, h, false);
-  markerCoords.at(3)=Convolve(marker4, 3*w, 3*h, w, h, false);
+  markerCoords.at(0)=Convolve(marker1, w, h, w, h);
+  markerCoords.at(1)=Convolve(marker2, 3*w, h, w, h);
+  markerCoords.at(2)=Convolve(marker3, w, 3*h, w, h);
+  markerCoords.at(3)=Convolve(marker4, 3*w, 3*h, w, h);
   */
-
-  markerCoords.at(0) = new R2Point(48, 129);
-  markerCoords.at(1) = new R2Point(440, 130);
-  markerCoords.at(2) = new R2Point(40, 285);
-  markerCoords.at(3) = new R2Point(443, 286);
-
+  
+  markerCoords.at(0) = new R2Point(157, 433);
+  markerCoords.at(1) = new R2Point(1470, 441);
+  markerCoords.at(2) = new R2Point(131, 965);
+  markerCoords.at(3) = new R2Point(1476, 968);
  
   return markerCoords;
 }
@@ -1280,18 +1275,18 @@ TrackMarkerMovement(R2Image * marker1, R2Image * marker2,
 		    R2Image * marker3, R2Image * marker4,
 		    std::vector< R2Point* > markers)
 {
-  int SEARCHWINDOW = 10;
+  int SEARCHWINDOW = 16;
   std::vector< R2Point* > ret;
   ret.resize(4);
 
   R2Point *m1 = markers.at(0), *m2 = markers.at(1), *m3 = markers.at(2), *m4 = markers.at(3);
 
-  printf("m1 x = %f, y = %f\n", m1->X(), m1->Y());
+  //printf("m1 x = %f, y = %f\n", m1->X(), m1->Y());
   
-  ret.at(0)=Convolve(marker1, m1->X(), m1->Y(), SEARCHWINDOW, SEARCHWINDOW, true);
-  ret.at(1)=Convolve(marker2, m2->X(), m2->Y(), SEARCHWINDOW, SEARCHWINDOW, false);
-  ret.at(2)=Convolve(marker3, m3->X(), m3->Y(), SEARCHWINDOW, SEARCHWINDOW, false);
-  ret.at(3)=Convolve(marker4, m4->X(), m4->Y(), SEARCHWINDOW, SEARCHWINDOW, false);
+  ret.at(0)=Convolve(marker1, m1->X(), m1->Y(), SEARCHWINDOW, SEARCHWINDOW);
+  ret.at(1)=Convolve(marker2, m2->X(), m2->Y(), SEARCHWINDOW, SEARCHWINDOW);
+  ret.at(2)=Convolve(marker3, m3->X(), m3->Y(), SEARCHWINDOW, SEARCHWINDOW);
+  ret.at(3)=Convolve(marker4, m4->X(), m4->Y(), SEARCHWINDOW, SEARCHWINDOW);
 
   return ret;
 }
@@ -1354,9 +1349,9 @@ ProjectImage(R2Image * otherImage,
   
   // implement feature tracking for the rest of the images
   R2Image *frame;
-  std::string in_path = "frames4/frame_",
+  std::string in_path = "frames/frame_",
     out_path = "frames_out/frame_";
-  for (int i = 2; i < 40; i++) {
+  for (int i = 2; i < 93; i++) {
     std::string in = in_path, out = out_path;
     if (i < 10) {
       in.append("0");
@@ -1371,10 +1366,13 @@ ProjectImage(R2Image * otherImage,
 
     markerCoords = frame->TrackMarkerMovement(m1, m2, m3, m4, markerCoords);
 
-    m1 = frame->GetSubImage(markerCoords.at(0), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-    m2 = frame->GetSubImage(markerCoords.at(1), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-    m3 = frame->GetSubImage(markerCoords.at(2), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-    m4 = frame->GetSubImage(markerCoords.at(3), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+    // update markers every 10 frames
+    if (i % 10 == 0) {
+      m1 = frame->GetSubImage(markerCoords.at(0), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+      m2 = frame->GetSubImage(markerCoords.at(1), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+      m3 = frame->GetSubImage(markerCoords.at(2), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+      m4 = frame->GetSubImage(markerCoords.at(3), SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
+    }
 
     // TODO: determine wtf is up with labelpoints method
     frame->LabelPoints(markerCoords);
