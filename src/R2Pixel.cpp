@@ -28,3 +28,21 @@ R2Pixel R2cyan_pixel(0.0, 1.0, 1.0, 1.0);
 R2Pixel R2magenta_pixel(1.0, 0.0, 1.0, 1.0);
 R2Pixel R2white_pixel(1.0, 1.0, 1.0, 1.0);
 
+
+// Pixel Functions
+double R2Pixel::
+PixelDistance(R2Pixel * p)
+{
+  return sqrt(pow(Red() - p->Red(), 2) +
+	      pow(Green() - p->Green(), 2) +
+	      pow(Blue() - p->Blue(), 2));
+}
+
+
+R2Pixel * R2Pixel::
+BlendByWeight(R2Pixel * p, double l, double h)
+{
+  R2Pixel* ret = new R2Pixel(*this);
+  ret->Clamp((1 - PixelDistance(p)) * h + l);
+  return ret;
+}

@@ -477,11 +477,6 @@ DrawBox(int x, int y, bool good)
 
 
 // helper function to determine harris score of each pixel s.t. score = r + g + b + a
-double R2Image::
-getPixelMagnitude(int x, int y)
-{
-  return Pixel(x,y).Red() + Pixel(x,y).Green() + Pixel(x,y).Blue() + Pixel(x,y).Alpha();
-}
 
 
 std::vector< R2Point* > R2Image::
@@ -797,11 +792,10 @@ double R2Image::
 SSD(double x1, double y1, R2Image * otherImage, double x2, double y2, double dx, double dy) 
 {
   double sum = 0.;
-  for (int i=-1*dx; i<=dx; i++) {
-    for (int j=-1*dy; j<=dy; j++) {
+  for (int i=-1*dx; i<dx; i++) {
+    for (int j=-1*dy; j<dy; j++) {
       sum +=
 	pow(Pixel(x1+i,y1+j).Luminance() - otherImage->Pixel(x2+i,y2+j).Luminance(), 2);
-	//        pow(getPixelMagnitude(x1+i,y1+j) - otherImage->getPixelMagnitude(x2+i,y2+j), 2);
     }
   }
   
@@ -1217,8 +1211,6 @@ greenRatio(double x, double y)
 R2Point* R2Image::
 Convolve(R2Image * subImage, double x, double y, double dx, double dy)
 {
-  //if(t) printf("x = %f, y = %f\n", x, y);
-
   int sW = subImage->Width(), sH = subImage->Height();
   int lower_x = fmax(x-dx, sW/2), upper_x = fmin(x + dx, Width() - sW/2);
   int lower_y = fmax(y-dy, sH/2), upper_y = fmin(y + dy, Height() - sH/2);
@@ -1231,15 +1223,16 @@ Convolve(R2Image * subImage, double x, double y, double dx, double dy)
     for(int lx=lower_x; lx<upper_x; lx++) {
       diff = SSD(lx, ly, subImage, sW/2, sH/2, sW/2, sH/2);
       if (diff < minDiff) {
-	//if (t) printf("diff = %f\n", diff);
 	minDiff = diff;
 	fx = lx;
 	fy = ly;
       }
     }
   }
-
-  if (fx < 0 || fy < 0) return new R2Point(x,y);
+  
+  if (fx < 0 || fy < 0) {
+    return new R2Point(x,y);
+  }
   return new R2Point(fx,fy);
 }
 
@@ -1250,23 +1243,23 @@ TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * 
   // get coordinates of each marker
   std::vector< R2Point* > markerCoords;
   markerCoords.resize(4);
-
   int w = Width()/4, h = Height()/4;
 
   // 2 each marker, convolve over image to determine location
   //assumes markers are originally in their respective quadrants of the image
-
+  
   /*
   markerCoords.at(0)=Convolve(marker1, w, h, w, h);
   markerCoords.at(1)=Convolve(marker2, 3*w, h, w, h);
   markerCoords.at(2)=Convolve(marker3, w, 3*h, w, h);
   markerCoords.at(3)=Convolve(marker4, 3*w, 3*h, w, h);
   */
-  
+
   markerCoords.at(0) = new R2Point(157, 433);
   markerCoords.at(1) = new R2Point(1470, 441);
   markerCoords.at(2) = new R2Point(131, 965);
   markerCoords.at(3) = new R2Point(1476, 968);
+
  
   return markerCoords;
 }
@@ -1277,14 +1270,13 @@ TrackMarkerMovement(R2Image * marker1, R2Image * marker2,
 		    R2Image * marker3, R2Image * marker4,
 		    std::vector< R2Point* > markers)
 {
-  int SEARCHWINDOW = 16;
+  int SEARCHWINDOW = 64;
   std::vector< R2Point* > ret;
   ret.resize(4);
 
-  R2Point *m1 = markers.at(0), *m2 = markers.at(1), *m3 = markers.at(2), *m4 = markers.at(3);
+  R2Point *m1 = markers.at(0), *m2 = markers.at(1),
+    *m3 = markers.at(2), *m4 = markers.at(3);
 
-  //printf("m1 x = %f, y = %f\n", m1->X(), m1->Y());
-  
   ret.at(0)=Convolve(marker1, m1->X(), m1->Y(), SEARCHWINDOW, SEARCHWINDOW);
   ret.at(1)=Convolve(marker2, m2->X(), m2->Y(), SEARCHWINDOW, SEARCHWINDOW);
   ret.at(2)=Convolve(marker3, m3->X(), m3->Y(), SEARCHWINDOW, SEARCHWINDOW);
@@ -1292,6 +1284,7 @@ TrackMarkerMovement(R2Image * marker1, R2Image * marker2,
 
   return ret;
 }
+
 
 
 R2Image* R2Image::
@@ -1305,6 +1298,7 @@ GetSubImage(R2Point* coord, double w, double h)
   }
   return ret;
 }
+
 
 
 void R2Image::
@@ -1322,6 +1316,7 @@ ResizeImage(int w, int h)
 }
 
 
+
 void R2Image::
 LabelPoints(std::vector< R2Point* > points)
 {
@@ -1333,12 +1328,14 @@ LabelPoints(std::vector< R2Point* > points)
 }
 
 
+
 void R2Image::
 ProjectImage(R2Image * otherImage,
 	     R2Image * m1, R2Image * m2, R2Image * m3, R2Image * m4)
 {
   // normalize each of the marker subimages
   int SUBIMAGE_WIDTH = 45, SUBIMAGE_HEIGHT = 45;
+
 
   /*
   m1->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
@@ -1353,25 +1350,33 @@ ProjectImage(R2Image * otherImage,
   ProjectPixels(otherImage, markerCoords);
   
   // implement feature tracking for the rest of the images
-  R2Image *frame;
+  R2Image *frame, *projection;
   std::string in_path = "frames/frame_",
-    out_path = "frames_out/frame_";
+    out_path = "frames_out/frame_",
+    project_path = "frames3/frame_";
+  
   for (int i = 2; i < 93; i++) {
-    std::string in = in_path, out = out_path;
+    std::string in = in_path, out = out_path, pr = project_path;
     if (i < 10) {
       in.append("0");
       out.append("0");
     }
+    if (i < 20) {
+      pr.append("0");
+    }
+    
     in.append(std::to_string(i));
     in.append(".jpeg\0");
     out.append(std::to_string(i));
     out.append(".jpeg\0");
+    pr.append(std::to_string(i/2));
+    pr.append(".jpeg\0");
 
     frame = new R2Image(in.c_str());
-
     markerCoords = frame->TrackMarkerMovement(m1, m2, m3, m4, markerCoords);
 
-    if (i % 10 == 0) {
+    /*
+      if (i % 10 == 0) {
       m1 = frame->GetSubImage(markerCoords.at(0),
 			      SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
       m2 = frame->GetSubImage(markerCoords.at(1),
@@ -1380,10 +1385,12 @@ ProjectImage(R2Image * otherImage,
 			      SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
       m4 = frame->GetSubImage(markerCoords.at(3),
 			      SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
-    }
-    
-    //frame->LabelPoints(markerCoords);
-    frame->ProjectPixels(otherImage, markerCoords);
+			      }
+    */
+
+    frame->LabelPoints(markerCoords);
+    projection = new R2Image(pr.c_str());
+    frame->ProjectPixels(projection, markerCoords);
 
     // Write output image
     if (!frame->Write(out.c_str())) {
@@ -1402,15 +1409,16 @@ ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords)
   // compute correlation matrix and project pixels
   std::vector< std::pair< R2Point*, R2Point* > > cor;
   cor.resize(4);
-
+  R2Pixel * ref = new R2Pixel(Pixel(434, 880));
+  
   std::pair< R2Point*, R2Point* > p0
     (new R2Point(0,0), markerCoords.at(0));
   std::pair< R2Point*, R2Point* > p1
-    (new R2Point(Width(),0), markerCoords.at(1));
+    (new R2Point(otherImage->Width(),0), markerCoords.at(1));
   std::pair< R2Point*, R2Point* > p2
-    (new R2Point(0,Height()), markerCoords.at(2));
+    (new R2Point(0,otherImage->Height()), markerCoords.at(2));
   std::pair< R2Point*, R2Point* > p3
-    (new R2Point(Width(),Height()), markerCoords.at(3));
+    (new R2Point(otherImage->Width(),otherImage->Height()), markerCoords.at(3));
 
   cor.at(0) = p0;
   cor.at(1) = p1;
@@ -1419,7 +1427,21 @@ ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords)
   
   // compute homography matrix mapping points from full image to points within markers
   double * H = BuildH(cor);
+  H = InvertHomographyMatrix(H);
 
+  R2Point * p;
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      p = applyTransformationMatrix(new R2Point(x,y), H);
+      if (p->X() >= 0 && p->X() < otherImage->Width() &&
+	  p->Y() >= 0 && p->Y() < otherImage->Height()
+	  & greenRatio(x, y) > 0.35) {
+	Pixel(x,y) = otherImage->Pixel(p->X(), p->Y());//.BlendByWeight(ref, 0.4, 0.6);
+      }
+    }
+  }
+  
+  /*
   R2Point * p;
   for (int y = 0; y < otherImage->Height(); y++) {
     for (int x = 0; x < otherImage->Width(); x++) {
@@ -1431,6 +1453,8 @@ ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords)
       }
     }
   } 
+  */
+  
 }
 
 

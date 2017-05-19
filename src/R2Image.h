@@ -69,7 +69,6 @@ class R2Image {
 
   // helper functions
   void DrawBox(int x, int y, bool good);
-  double getPixelMagnitude(int x, int y);
   std::vector< R2Point* > GetBestFeatures(void);
   void line(int x0, int x1, int y0, int y1, float r, float g, float b);
   double SSD(double x0, double y0, R2Image * otherImage,

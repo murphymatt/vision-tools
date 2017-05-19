@@ -54,6 +54,11 @@ class R2Pixel {
   friend R2Pixel operator*(double scale, const R2Pixel& pixel);
   friend R2Pixel operator/(const R2Pixel& pixel, double scale);
 
+  
+  // pixel Comparison functions
+  double PixelDistance(R2Pixel * p);
+  R2Pixel * BlendByWeight(R2Pixel * p, double l, double h);
+  
  private:
   double c[4];
 };
@@ -447,8 +452,6 @@ operator/=(double a)
   c[2] /= a;
   return *this;
 }
-
-
 
 
 
