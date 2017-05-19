@@ -1248,18 +1248,17 @@ TrackMarkers(R2Image * marker1, R2Image * marker2, R2Image * marker3, R2Image * 
   // 2 each marker, convolve over image to determine location
   //assumes markers are originally in their respective quadrants of the image
   
-  /*
   markerCoords.at(0)=Convolve(marker1, w, h, w, h);
   markerCoords.at(1)=Convolve(marker2, 3*w, h, w, h);
   markerCoords.at(2)=Convolve(marker3, w, 3*h, w, h);
   markerCoords.at(3)=Convolve(marker4, 3*w, 3*h, w, h);
-  */
 
+  /*
   markerCoords.at(0) = new R2Point(157, 433);
   markerCoords.at(1) = new R2Point(1470, 441);
   markerCoords.at(2) = new R2Point(131, 965);
   markerCoords.at(3) = new R2Point(1476, 968);
-
+  */
  
   return markerCoords;
 }
@@ -1430,31 +1429,32 @@ ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords)
   H = InvertHomographyMatrix(H);
 
   R2Point * p;
+  double pWeight_g = 0, pWeight_n = 0, pWeight;
+  int nc=0, gc=0;
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
       p = applyTransformationMatrix(new R2Point(x,y), H);
       if (p->X() >= 0 && p->X() < otherImage->Width() &&
-	  p->Y() >= 0 && p->Y() < otherImage->Height()
-	  & greenRatio(x, y) > 0.35) {
-	Pixel(x,y) = otherImage->Pixel(p->X(), p->Y());//.BlendByWeight(ref, 0.4, 0.6);
+	  p->Y() >= 0 && p->Y() < otherImage->Height()) {
+	pWeight = Pixel(x,y).GetPixelWeight(ref);
+	if (greenRatio(x,y) < 0.35) {
+	  nc++;
+	  pWeight_n += pWeight;
+	}
+	if (greenRatio(x,y) > 0.35) {
+	  gc++;
+	  pWeight_g += pWeight;
+	}
+	if (pWeight < 0.05)
+	  //Pixel(x,y) = otherImage->Pixel(p->X(), p->Y());
+	  Pixel(x,y) = (pWeight) * Pixel(x,y) +
+	    (1 - pWeight) * otherImage->Pixel(p->X(), p->Y());
       }
     }
   }
-  
-  /*
-  R2Point * p;
-  for (int y = 0; y < otherImage->Height(); y++) {
-    for (int x = 0; x < otherImage->Width(); x++) {
-      p = applyTransformationMatrix(new R2Point(x,y), H);
-      if (p->X() >= 0 && p->X() < width &&
-	  p->Y() >= 0 && p->Y() < height &&
-	  greenRatio(p->X(), p->Y()) > 0.35) {
-	Pixel(p->X(), p->Y()) = otherImage->Pixel(x,y);
-      }
-    }
-  } 
-  */
-  
+
+  printf("g_avg = %f\n", pWeight_g / gc);
+  printf("n_avg = %f\n", pWeight_n / nc);
 }
 
 

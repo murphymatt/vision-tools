@@ -39,10 +39,18 @@ PixelDistance(R2Pixel * p)
 }
 
 
+double R2Pixel::
+GetPixelWeight(R2Pixel * p)
+{
+  return 2 / (1 + exp(-1 * PixelDistance(p))) - 1;
+}
+
+
 R2Pixel * R2Pixel::
 BlendByWeight(R2Pixel * p, double l, double h)
 {
   R2Pixel* ret = new R2Pixel(*this);
-  ret->Clamp((1 - PixelDistance(p)) * h + l);
+  //ret->Clamp((1 - PixelDistance(p)) * h + l);
+  *ret = *ret * GetPixelWeight(p);
   return ret;
 }

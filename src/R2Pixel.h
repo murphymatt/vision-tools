@@ -57,6 +57,7 @@ class R2Pixel {
   
   // pixel Comparison functions
   double PixelDistance(R2Pixel * p);
+  double GetPixelWeight(R2Pixel * p);
   R2Pixel * BlendByWeight(R2Pixel * p, double l, double h);
   
  private:
