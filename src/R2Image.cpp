@@ -1335,6 +1335,11 @@ ProjectImage(R2Image * otherImage,
   // normalize each of the marker subimages
   int SUBIMAGE_WIDTH = 45, SUBIMAGE_HEIGHT = 45;
 
+  R2Pixel * ref = new R2Pixel(Pixel(434, 880));
+  R2Pixel * test0 = new R2Pixel(Pixel(540, 770));
+  R2Pixel * test1 = new R2Pixel(Pixel(1097, 714));  
+  printf("test weight0 = %f\n", (*test0).GetPixelWeight(ref));
+  printf("test weight1 = %f\n", (*test1).GetPixelWeight(ref));
 
   /*
   m1->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
@@ -1352,7 +1357,7 @@ ProjectImage(R2Image * otherImage,
   R2Image *frame, *projection;
   std::string in_path = "frames/frame_",
     out_path = "frames_out/frame_",
-    project_path = "frames3/frame_";
+    project_path = "projections/math.jpeg";
   
   for (int i = 2; i < 93; i++) {
     std::string in = in_path, out = out_path, pr = project_path;
@@ -1360,16 +1365,16 @@ ProjectImage(R2Image * otherImage,
       in.append("0");
       out.append("0");
     }
-    if (i < 20) {
-      pr.append("0");
-    }
+    // if (i < 20) {
+    //   pr.append("0");
+    // }
     
     in.append(std::to_string(i));
     in.append(".jpeg\0");
     out.append(std::to_string(i));
     out.append(".jpeg\0");
-    pr.append(std::to_string(i/2));
-    pr.append(".jpeg\0");
+    // pr.append(std::to_string(i/2));
+    // pr.append(".jpeg\0");
 
     frame = new R2Image(in.c_str());
     markerCoords = frame->TrackMarkerMovement(m1, m2, m3, m4, markerCoords);
@@ -1409,6 +1414,7 @@ ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords)
   std::vector< std::pair< R2Point*, R2Point* > > cor;
   cor.resize(4);
   R2Pixel * ref = new R2Pixel(Pixel(434, 880));
+  double THRESHOLD = 0.10;
   
   std::pair< R2Point*, R2Point* > p0
     (new R2Point(0,0), markerCoords.at(0));
@@ -1429,7 +1435,7 @@ ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords)
   H = InvertHomographyMatrix(H);
 
   R2Point * p;
-  double pWeight_g = 0, pWeight_n = 0, pWeight;
+  double pWeight, pWeight_n, pWeight_e, pWeight_s, pWeight_w;
   int nc=0, gc=0;
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
@@ -1437,24 +1443,26 @@ ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords)
       if (p->X() >= 0 && p->X() < otherImage->Width() &&
 	  p->Y() >= 0 && p->Y() < otherImage->Height()) {
 	pWeight = Pixel(x,y).GetPixelWeight(ref);
-	if (greenRatio(x,y) < 0.35) {
-	  nc++;
-	  pWeight_n += pWeight;
-	}
-	if (greenRatio(x,y) > 0.35) {
-	  gc++;
-	  pWeight_g += pWeight;
-	}
-	if (pWeight < 0.05)
-	  //Pixel(x,y) = otherImage->Pixel(p->X(), p->Y());
+
+	// determine if pixel is similar enough to reference
+	if (pWeight < THRESHOLD)
 	  Pixel(x,y) = (pWeight) * Pixel(x,y) +
 	    (1 - pWeight) * otherImage->Pixel(p->X(), p->Y());
+
+	// check for error, ensure surrounding pixels are similar enough
+	else {
+	  pWeight_n = Pixel(x,y+10).GetPixelWeight(ref);
+	  pWeight_e = Pixel(x+10,y).GetPixelWeight(ref);
+	  pWeight_s = Pixel(x,y-10).GetPixelWeight(ref);
+	  pWeight_w = Pixel(x-10,y).GetPixelWeight(ref);
+	  if (pWeight_n < THRESHOLD && pWeight_e < THRESHOLD &&
+	      pWeight_s < THRESHOLD && pWeight_w < THRESHOLD)
+	    Pixel(x,y) = (pWeight_n) * Pixel(x,y) +
+	    (1 - pWeight_n) * otherImage->Pixel(p->X(), p->Y());
+	}
       }
     }
   }
-
-  printf("g_avg = %f\n", pWeight_g / gc);
-  printf("n_avg = %f\n", pWeight_n / nc);
 }
 
 
