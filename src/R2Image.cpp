@@ -1436,7 +1436,6 @@ ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords)
 
   R2Point * p;
   double pWeight, pWeight_n, pWeight_e, pWeight_s, pWeight_w;
-  int nc=0, gc=0;
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
       p = applyTransformationMatrix(new R2Point(x,y), H);
