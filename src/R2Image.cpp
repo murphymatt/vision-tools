@@ -384,7 +384,7 @@ ChangeSaturation(double factor)
 void R2Image::
 Blur(double sigma)
 {
-  BilateralFilter(4, sigma, 0);
+  BilateralFilter(4);
 }
 
 
