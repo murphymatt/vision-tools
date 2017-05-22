@@ -47,6 +47,7 @@ static char options[] =
   "  -matchTranslation <file:other_image>\n"
   "  -matchHomography <file:other_image>\n"
   "  -median <int:window>\n"
+  "  -bilateral <real:sigma>\n"
   "  -projectImage <file:other_image>\n";
 
 
@@ -239,6 +240,12 @@ main(int argc, char **argv)
       int window = atof(argv[1]);
       argv += 2, argc -= 2;
       image->MedianFilter(window);
+    }
+    else if (!strcmp(*argv, "-bilateral")) {
+      CheckOption(*argv, argc, 2);
+      double sigma = atof(argv[1]);
+      argv += 2, argc -= 2;
+      image->BilateralFilter(sigma);
     }
     else if (!strcmp(*argv, "-projectImage")) {
       CheckOption(*argv, argc, 2);
