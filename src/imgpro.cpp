@@ -46,7 +46,7 @@ static char options[] =
   "  -highpasssharpen <real:sigma>\n"
   "  -matchTranslation <file:other_image>\n"
   "  -matchHomography <file:other_image>\n"
-  "  -medianfilter <int:window>\n"
+  "  -median <int:window>\n"
   "  -projectImage <file:other_image>\n";
 
 

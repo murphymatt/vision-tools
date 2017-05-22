@@ -658,7 +658,7 @@ MedianFilter(int window)
   
   // iterate over image
   for (int y=0; y<height; y++) {
-    for (int x=0; x<height; x++) {
+    for (int x=0; x<width; x++) {
 
       int ind=0;
       std::vector<R2Pixel*> pixels;
@@ -708,13 +708,17 @@ BilateralFilter(double sigma, int window, double threshold)
   R2Image * tmp = new R2Image(this->width, this->height);
 
   // apply kernel to image over y direction
+  R2Pixel * p = NULL;
+  double pWeight;
   for (int y=0; y<height; y++) {
     for (int x=0; x<width; x++) {
       R2Pixel * val = new R2Pixel();
       double weights = 0;
       for (int ly=(-3*s); ly<=(3*s); ly++) {
         if (y+ly>=0 && y+ly<height) {
-	  *val += Pixel(x,y+ly)*kernel[ly+3*s];
+	  *p = Pixel(x,y+ly);
+	  pWeight = p->GetPixelWeight(val);
+	  *val += (*p) * kernel[ly+3*s] * pWeight;
 	  weights += kernel[ly+3*s];
         }
       }
@@ -731,7 +735,9 @@ BilateralFilter(double sigma, int window, double threshold)
       double weights = 0;
       for (int lx=(-3*s); lx<=(3*s); lx++) {
         if (x+lx>=0 && x+lx<width) {
-	  *val += tmp->Pixel(x+lx,y)*kernel[lx+3*s];
+	  *p = tmp->Pixel(x+lx,y);
+	  pWeight = p->GetPixelWeight(val);
+	  *val += (*p) * kernel[lx+3*s] * pWeight;
 	  weights += kernel[lx+3*s];
         }
       }
@@ -920,14 +926,8 @@ blendOtherImageTranslated(R2Image * otherImage)
 R2Point* R2Image::
 applyTransformationMatrix(R2Point * p, double * H)
 {
-  double x =
-    H[0] * p->X() +
-    H[1] * p->Y() +
-    H[2] * 1;
-  double y =
-    H[3] * p->X() +
-    H[4] * p->Y() +
-    H[5] * 1;
+  double x = H[0] * p->X() + H[1] * p->Y() + H[2];
+  double y = H[3] * p->X() + H[4] * p->Y() + H[5];
 
   return new R2Point(x,y);
 }
@@ -1332,15 +1332,10 @@ void R2Image::
 ProjectImage(R2Image * otherImage,
 	     R2Image * m1, R2Image * m2, R2Image * m3, R2Image * m4)
 {
+
+  
   // normalize each of the marker subimages
   int SUBIMAGE_WIDTH = 45, SUBIMAGE_HEIGHT = 45;
-
-  R2Pixel * ref = new R2Pixel(Pixel(434, 880));
-  R2Pixel * test0 = new R2Pixel(Pixel(540, 770));
-  R2Pixel * test1 = new R2Pixel(Pixel(1097, 714));  
-  printf("test weight0 = %f\n", (*test0).GetPixelWeight(ref));
-  printf("test weight1 = %f\n", (*test1).GetPixelWeight(ref));
-
   /*
   m1->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
   m2->ResizeImage(SUBIMAGE_WIDTH, SUBIMAGE_HEIGHT);
@@ -1350,7 +1345,7 @@ ProjectImage(R2Image * otherImage,
 
   // locate 4 markers in original image
   std::vector< R2Point* > markerCoords = TrackMarkers(m1, m2, m3, m4);
-  LabelPoints(markerCoords);
+  //LabelPoints(markerCoords);
   ProjectPixels(otherImage, markerCoords);
   
   // implement feature tracking for the rest of the images
@@ -1392,7 +1387,7 @@ ProjectImage(R2Image * otherImage,
 			      }
     */
 
-    frame->LabelPoints(markerCoords);
+    //frame->LabelPoints(markerCoords);
     projection = new R2Image(pr.c_str());
     frame->ProjectPixels(projection, markerCoords);
 
@@ -1410,59 +1405,70 @@ ProjectImage(R2Image * otherImage,
 void R2Image::
 ProjectPixels(R2Image* otherImage, std::vector< R2Point* > markerCoords)
 {
+  R2Pixel * ref = new R2Pixel(Pixel(434, 880));
   // compute correlation matrix and project pixels
   std::vector< std::pair< R2Point*, R2Point* > > cor;
   cor.resize(4);
-  R2Pixel * ref = new R2Pixel(Pixel(434, 880));
+
   double THRESHOLD = 0.10;
   
   std::pair< R2Point*, R2Point* > p0
-    (new R2Point(0,0), markerCoords.at(0));
+    (new R2Point(0,0),
+     markerCoords.at(0));
   std::pair< R2Point*, R2Point* > p1
-    (new R2Point(otherImage->Width(),0), markerCoords.at(1));
+    (new R2Point(otherImage->width-1,0),
+     markerCoords.at(1));
   std::pair< R2Point*, R2Point* > p2
-    (new R2Point(0,otherImage->Height()), markerCoords.at(2));
-  std::pair< R2Point*, R2Point* > p3
-    (new R2Point(otherImage->Width(),otherImage->Height()), markerCoords.at(3));
+    (new R2Point(0,otherImage->height-1),
+     markerCoords.at(2));
+  std::pair< R2Point*, R2Point* > p3 
+    (new R2Point(otherImage->width-1,otherImage->height-1),
+     markerCoords.at(3));
 
   cor.at(0) = p0;
   cor.at(1) = p1;
   cor.at(2) = p2;
   cor.at(3) = p3;
-  
-  // compute homography matrix mapping points from full image to points within markers
+
+
+  // compute homography matrix mapping points from full image
   double * H = BuildH(cor);
   H = InvertHomographyMatrix(H);
 
   R2Point * p;
   double pWeight, pWeight_n, pWeight_e, pWeight_s, pWeight_w;
+
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
+
+      // determine if projection is within bounds
       p = applyTransformationMatrix(new R2Point(x,y), H);
       if (p->X() >= 0 && p->X() < otherImage->Width() &&
 	  p->Y() >= 0 && p->Y() < otherImage->Height()) {
+	
 	pWeight = Pixel(x,y).GetPixelWeight(ref);
-
+	pWeight_n = Pixel(x,y+5).GetPixelWeight(ref);
+	pWeight_e = Pixel(x+5,y).GetPixelWeight(ref);
+	pWeight_s = Pixel(x,y-5).GetPixelWeight(ref);
+	pWeight_w = Pixel(x-5,y).GetPixelWeight(ref);
+	  
 	// determine if pixel is similar enough to reference
-	if (pWeight < THRESHOLD)
-	  Pixel(x,y) = (pWeight) * Pixel(x,y) +
-	    (1 - pWeight) * otherImage->Pixel(p->X(), p->Y());
-
+	if (pWeight < THRESHOLD &&
+	    (pWeight_n < THRESHOLD || pWeight_e < THRESHOLD ||
+	     pWeight_s < THRESHOLD || pWeight_w < THRESHOLD)) {
+	  Pixel(x,y) = (pWeight) * Pixel(x,y) + (1 - pWeight) *
+	    otherImage->Pixel(p->X(), p->Y());
+	}
 	// check for error, ensure surrounding pixels are similar enough
-	else {
-	  pWeight_n = Pixel(x,y+10).GetPixelWeight(ref);
-	  pWeight_e = Pixel(x+10,y).GetPixelWeight(ref);
-	  pWeight_s = Pixel(x,y-10).GetPixelWeight(ref);
-	  pWeight_w = Pixel(x-10,y).GetPixelWeight(ref);
-	  if (pWeight_n < THRESHOLD && pWeight_e < THRESHOLD &&
-	      pWeight_s < THRESHOLD && pWeight_w < THRESHOLD)
-	    Pixel(x,y) = (pWeight_n) * Pixel(x,y) +
-	    (1 - pWeight_n) * otherImage->Pixel(p->X(), p->Y());
+	else if (pWeight_n < THRESHOLD && pWeight_e < THRESHOLD &&
+		 pWeight_s < THRESHOLD && pWeight_w < THRESHOLD) {
+	  Pixel(x,y) = (pWeight_n) * Pixel(x,y) + (1 - pWeight_n) *
+	    otherImage->Pixel(p->X(), p->Y());
 	}
       }
     }
   }
-}
+} 
 
 
 ////////////////////////////////////////////////////////////////////////
