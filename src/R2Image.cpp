@@ -687,7 +687,7 @@ MedianFilter(int window)
 
 
 void R2Image::
-BilateralFilter(double sigma, int window, double threshold)
+BilateralFilter(double sigma)
 {
   // Bilateral filter: gausian blur with threshold implemented
   const double PI = 3.1415926535;
