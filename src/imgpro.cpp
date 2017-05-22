@@ -234,7 +234,7 @@ main(int argc, char **argv)
       image->blendOtherImageHomography(other_image);
       delete other_image;
     }
-    else if (!strcmp(*argv, "-medianfilter")) {
+    else if (!strcmp(*argv, "-median")) {
       CheckOption(*argv, argc, 2);
       int window = atof(argv[1]);
       argv += 2, argc -= 2;
