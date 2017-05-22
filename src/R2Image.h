@@ -113,7 +113,7 @@ class R2Image {
 
   // Non-Linear filtering operations
   void MedianFilter(int window);
-  void BilateralFilter(double sigma);
+  void BilateralFilter(double sigma, double tolerance);
 
 
   // further operations
