@@ -384,13 +384,6 @@ ChangeSaturation(double factor)
 void R2Image::
 Blur(double sigma)
 {
-  BilateralFilter(4);
-}
-
-
-void R2Image::
-BlurD(double sigma)
-{
   // Gaussian blur of the image. Separable solution is preferred
   const double PI = 3.1415926535;
   const double EULER = 2.7182818285;
@@ -407,7 +400,7 @@ BlurD(double sigma)
       / (sqrt(2. * PI) * sigma);
   }
 
-  R2Image * tmp = new R2Image(this->width, this->height);
+  R2Image * tmp = new R2Image(width, height);
 
   // apply kernel to image over y direction
   for (int y=0; y<height; y++) {
@@ -476,9 +469,7 @@ DrawBox(int x, int y, bool good)
 }
 
 
-// helper function to determine harris score of each pixel s.t. score = r + g + b + a
-
-
+// determine harris score of each pixel s.t. score = r + g + b + a
 std::vector< R2Point* > R2Image::
 GetBestFeatures(void)
 {
@@ -529,15 +520,15 @@ Harris(double sigma)
   // Output should be 50% grey at flat regions, white at corners and black/dark near edges
   
   // create ix and iy components
-  R2Image * ix = new R2Image(this->width, this->height, this->pixels);
+  R2Image * ix = new R2Image(width, height, pixels);
   ix->SobelX();
-  R2Image * iy = new R2Image(this->width, this->height, this->pixels);
+  R2Image * iy = new R2Image(width, height, pixels);
   iy->SobelY();
 
   // create 3 images from ix and iy components
-  R2Image * img1 = new R2Image(this->width, this->height);
-  R2Image * img2 = new R2Image(this->width, this->height);
-  R2Image * img3 = new R2Image(this->width, this->height);
+  R2Image * img1 = new R2Image(width, height);
+  R2Image * img2 = new R2Image(width, height);
+  R2Image * img3 = new R2Image(width, height);
   for (int y=0; y<height; y++) {
     for (int x=0; x<width; x++) {
       img1->Pixel(x,y) = ix->Pixel(x,y) * ix->Pixel(x,y);
@@ -595,7 +586,7 @@ void R2Image::
 Sharpen()
 {
   // create temporary image
-  R2Image * tmp = new R2Image(this->width, this->height);
+  R2Image * tmp = new R2Image(width, height);
 
   // Sharpen an image using a linear filter. Use a kernel of your choosing.
   int H[3][3] = {{0, -1, 0},
@@ -687,7 +678,7 @@ MedianFilter(int window)
 
 
 void R2Image::
-BilateralFilter(double sigma)
+BilateralFilter(double sigma, double tolerance)
 {
   // Bilateral filter: gausian blur with threshold implemented
   const double PI = 3.1415926535;
@@ -705,10 +696,10 @@ BilateralFilter(double sigma)
       / (sqrt(2. * PI) * sigma);
   }
 
-  R2Image * tmp = new R2Image(this->width, this->height);
+  R2Image * tmp = new R2Image(width, height);
+  R2Pixel * p = NULL;
 
   // apply kernel to image over y direction
-  R2Pixel * p = NULL;
   double pWeight;
   for (int y=0; y<height; y++) {
     for (int x=0; x<width; x++) {
@@ -716,10 +707,12 @@ BilateralFilter(double sigma)
       double weights = 0;
       for (int ly=(-3*s); ly<=(3*s); ly++) {
         if (y+ly>=0 && y+ly<height) {
-	  *p = Pixel(x,y+ly);
-	  pWeight = p->GetPixelWeight(val);
-	  *val += (*p) * kernel[ly+3*s] * pWeight;
-	  weights += kernel[ly+3*s];
+	  p = new R2Pixel(Pixel(x,y+ly));
+	  pWeight = 1 - p->GetPixelWeight(val);
+	  if (pWeight > tolerance) {
+	    *val += (*p) * kernel[ly+3*s] * pWeight;
+	    weights += kernel[ly+3*s] * pWeight;
+	  }
         }
       }
       *val /= weights;
@@ -735,10 +728,12 @@ BilateralFilter(double sigma)
       double weights = 0;
       for (int lx=(-3*s); lx<=(3*s); lx++) {
         if (x+lx>=0 && x+lx<width) {
-	  *p = tmp->Pixel(x+lx,y);
-	  pWeight = p->GetPixelWeight(val);
-	  *val += (*p) * kernel[lx+3*s] * pWeight;
-	  weights += kernel[lx+3*s];
+	  p = new R2Pixel(tmp->Pixel(x+lx,y));
+	  pWeight = 1 - p->GetPixelWeight(val);
+	  if (pWeight > tolerance) {
+	    *val += (*p) * kernel[lx+3*s] * pWeight;
+	    weights += kernel[lx+3*s] * pWeight;
+	  }
         }
       }
       *val /= weights;
